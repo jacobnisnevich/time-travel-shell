@@ -1,0 +1,37 @@
+Rules For Syntax Parsing
+========================
+1. A single new line is treated as a semicolon (sequence commmand)
+2. 2 or more new lines result in two different command trees (nodes in linked list)
+3. Special case of incomplete command where the right operand is missing: 2 or more '\n' have no effect
+
+Tuan's Algorithm
+================
+
+Two stacks: command_stack and operator_stack
+Linked list
+
+pseudocode:
+-----------
+if encounters new command
+	put on command stack
+
+if encounters new operator
+	if operator stack is null
+		add new operator to operator_stack
+	else 
+		if precedence of new operator > precedence of top operator
+			add new operator to operator_stack
+		else 
+			while top operator != '(' and precedence of new operator <= precendence of top operator
+				operator = operator_stack.pop()
+				second_command = command_stack.pop()
+				first_command = command_stack.pop()
+				new_command = combine(first_command, second_command, new_operator)
+				push new_command to command_stack
+				top_operator = top of operator_stack
+				if top_operator is null
+					break
+		push new operator to operator_stack
+		...
+		process whatever left in operator_stack
+
