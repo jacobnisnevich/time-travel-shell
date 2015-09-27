@@ -22,8 +22,17 @@ command_stream
   command_stream_t next_command;
 };
 
+typedef struct
+first_operator
+{
+  int cmd_type;
+  int start_location;
+  char* error;
+} first_operator;
+
+
 char**
-strtok_str(char* input_string, char* delimiter)
+strtok_str(char* input_string, char* delimiter, int* num_trees)
 {
   size_t input_string_size = strlen(input_string);
 
@@ -49,6 +58,8 @@ strtok_str(char* input_string, char* delimiter)
       matching_string = strstr(buffer, delimiter);
       if (matching_string)
       {
+        ++(*num_trees);
+
         match_start = matching_string - buffer;
         memcpy(token_string, buffer, i - delimiter_size);
         token_string[i - delimiter_size] = '\0';
@@ -63,6 +74,8 @@ strtok_str(char* input_string, char* delimiter)
     }
   }
 
+  ++(*num_trees);
+
   buffer = realloc(buffer, input_string_size * sizeof(char));
   memcpy(buffer, input_string + buffer_start, input_string_size - buffer_start);
   buffer[input_string_size - buffer_start] = '\0';
@@ -76,7 +89,54 @@ strtok_str(char* input_string, char* delimiter)
 char**
 split_to_command_trees(char* input_string)
 {
-  return strtok_str(input_string, "\n\n");
+  int num_trees = 0;
+
+  char** command_trees = strtok_str(input_string, "\n\n", &num_trees);
+
+  printf("%d \n", num_trees);
+
+  return command_trees;
+}
+
+first_operator
+get_first_operator(char* input_string)
+{
+  first_operator first_op;
+  first_op.start_location = -1;
+  first_op.cmd_type = -1;
+  first_op.error = "";
+
+  int input_length = strlen(input_string);
+
+  int i;
+  for (i = 0; i < input_length; ++i)
+  {
+    char ch = input_string[i];
+    switch (ch)
+    {
+      case '(':
+        first_op.start_location = i;
+        first_op.cmd_type = SUBSHELL_COMMAND;
+        return first_op;
+        break;
+      case '&':
+        if (i == 0)
+        {
+          first_op.error = "AND operator with no left operand";
+          return first_op;
+        }
+        else if (input_string[i - 1] == '&')
+        {
+          first_op.start_location = i - 1;
+          first_op.cmd_type = AND_COMMAND;
+          return first_op;
+        }
+        break;
+      case '|':
+        break;
+
+    }
+  }
 }
 
 command_stream_t
@@ -124,6 +184,6 @@ read_command_stream (command_stream_t s)
   {
     s = s->next_command;
   }
-  
+
   return current_command;
 }
