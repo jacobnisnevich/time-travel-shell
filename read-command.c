@@ -55,7 +55,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
       memcpy(buffer, start, end - start);
       buffer[end - start] = '\0';
       split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
-      split_input[(*num_trees)++] = buffer;
+      memcpy(split_input[(*num_trees)++], buffer, strlen(buffer));
       start += end - start + delimiter_size;
       end = strstr(start, delimiter);
     }
@@ -65,7 +65,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   buffer[&input_string[input_string_size] - start] = '\0';
 
   split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
-  strcpy(split_input[(*num_trees)++], buffer);
+  memcpy(split_input[(*num_trees)++], buffer, strlen(buffer));
 
   return split_input;
 }
@@ -76,8 +76,6 @@ split_to_command_trees(char* input_string)
   int num_trees = 0;
 
   char** command_trees = strtok_str(input_string, "\n\n", &num_trees);
-
-  printf("%d \n", num_trees);
 
   return command_trees;
 }
@@ -151,9 +149,6 @@ make_command_stream (int (*get_next_byte) (void *),
   }
 
   char** command_trees = split_to_command_trees(input_string);
-
-  printf("%s \n", command_trees[0]);
-  printf("%s", command_trees[1]);
 
   return 0;
 }
