@@ -42,8 +42,7 @@ strtok_str(char* input_string, char* delimiter)
   for (i = 0; i < input_string_size; ++i)
   {
     if (i - buffer_start > 0)
-      {
-      buffer = realloc(buffer, (i - buffer_start + 1) * sizeof(char));
+    {
       memcpy(buffer, input_string + buffer_start, i - buffer_start);
       buffer[i - buffer_start] = '\0';
 
@@ -51,14 +50,13 @@ strtok_str(char* input_string, char* delimiter)
       if (matching_string)
       {
         match_start = matching_string - buffer;
-
-        token_string = realloc(buffer, (i - delimiter_size + 1) * sizeof(char));
         memcpy(token_string, buffer, i - delimiter_size);
         token_string[i - delimiter_size] = '\0';
 
         buffer_start = i;
 
-        split_input[split_input_size] = malloc(strlen(token_string) * sizeof(char));
+        split_input[split_input_size] = malloc(strlen(token_string) * 
+          sizeof(char));
         strcpy(split_input[split_input_size], token_string);
         ++split_input_size;
       }
@@ -86,46 +84,9 @@ split_to_command_trees(char* input_string)
   return command_trees;
 }
 
-char**
-split_to_commands(char* input_string, size_t input_string_size)
-{
-  char** tokenized_array = malloc(255 * sizeof(char*));
-  size_t curr_max_size = 255;
-  int curr_arr_size = 0;
-
-  int is_incomplete_command = 0;
-  char prev_char;
-  char curr_char;
-  char* curr_command = malloc(255 * sizeof(char));
-  int curr_command_start = 0;
-  int curr_command_size = 0;
-
-  size_t i;
-  for (i = 0; i < input_string_size; ++i)
-  {
-    curr_char = input_string[i];
-
-    if ((curr_char == '\n' && !is_incomplete_command) || curr_char == ';')
-    {
-      curr_command_size = i - curr_command_start;
-
-      if (curr_command_size > 255) 
-      {
-        curr_command = realloc(curr_command, curr_command_size * sizeof(char));
-      }
-
-      strncpy(curr_command, input_string + curr_command_start, curr_command_size);
-      tokenized_array[curr_arr_size] = curr_command;
-      ++curr_arr_size;
-    }
-  }
-
-  return tokenized_array;
-}
-
 command_stream_t
-make_command_stream (int (*get_next_byte) (void *),
-		     void *get_next_byte_argument)
+make_command_stream (int (*get_next_byte) (void *), 
+  void *get_next_byte_argument)
 {
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
@@ -151,6 +112,9 @@ make_command_stream (int (*get_next_byte) (void *),
   }
 
   char** command_trees = split_to_command_trees(input_string);
+
+  printf("%s \n", command_trees[0]);
+  printf("%s", command_trees[1]);
 
   return 0;
 }
