@@ -76,12 +76,7 @@ strtok_str(char* input_string, char* delimiter)
 char**
 split_to_command_trees(char* input_string)
 {
-  int command_trees_count = 0;
-  char** command_trees = malloc(255 * sizeof(char*));
-
-  command_trees = strtok_str(input_string, "\n\n");
-
-  return command_trees;
+  return strtok_str(input_string, "\n\n");
 }
 
 command_stream_t
@@ -124,6 +119,11 @@ read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
   command_t current_command = s->current_command;
-  s = s->next_command;
+
+  if (s)
+  {
+    s = s->next_command;
+  }
+  
   return current_command;
 }
