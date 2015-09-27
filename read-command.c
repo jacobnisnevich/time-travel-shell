@@ -41,47 +41,31 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   char** split_input = malloc(255 * sizeof(char*));
   size_t split_input_size = 0;
 
-  char* buffer = malloc(input_string_size * sizeof(char));
+  char* buffer = malloc(sizeof(char));
   size_t buffer_start = 0;
   char* matching_string = malloc(input_string_size * sizeof(char));
   size_t match_start = 0;
   char* token_string = malloc(input_string_size * sizeof(char));
 
-  size_t i;
-  for (i = 0; i < input_string_size; ++i)
-  {
-    if (i - buffer_start > 0)
+  char* start = input_string;
+  char* end = strstr(input_string, delimiter);
+  while(end != NULL)
     {
-      memcpy(buffer, input_string + buffer_start, i - buffer_start);
-      buffer[i - buffer_start] = '\0';
-
-      matching_string = strstr(buffer, delimiter);
-      if (matching_string)
-      {
-        ++(*num_trees);
-
-        match_start = matching_string - buffer;
-        memcpy(token_string, buffer, i - delimiter_size);
-        token_string[i - delimiter_size] = '\0';
-
-        buffer_start = i;
-
-        split_input[split_input_size] = malloc(strlen(token_string) * 
-          sizeof(char));
-        strcpy(split_input[split_input_size], token_string);
-        ++split_input_size;
-      }
+      buffer = realloc(buffer, (end - start + 1) * sizeof(char*));
+      memcpy(buffer, start, end - start);
+      buffer[end - start] = '\0';
+      split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
+      split_input[(*num_trees)++] = buffer;
+      start += end - start + delimiter_size;
+      end = strstr(start, delimiter);
     }
-  }
 
-  ++(*num_trees);
+  buffer = realloc(buffer, &input_string[input_string_size] - start);
+  memcpy(buffer, start, &input_string[input_string_size] - start);
+  buffer[&input_string[input_string_size] - start] = '\0';
 
-  buffer = realloc(buffer, input_string_size * sizeof(char));
-  memcpy(buffer, input_string + buffer_start, input_string_size - buffer_start);
-  buffer[input_string_size - buffer_start] = '\0';
-
-  split_input[split_input_size] = malloc(strlen(buffer) * sizeof(char));
-  strcpy(split_input[split_input_size], buffer);
+  split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
+  strcpy(split_input[(*num_trees)++], buffer);
 
   return split_input;
 }
