@@ -18,8 +18,8 @@
 struct
 command_stream
 {
-  command_t current_command;
-  command_stream_t next_command;
+  command_t command_tree;
+  command_stream_t next;
 };
 
 typedef struct
@@ -65,7 +65,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
 command_t
 parse_simple_command(char* command_str)
 {
-  command_t simple_command;
+  command_t simple_command = malloc(sizeof(command));
 
   simple_command->type = SIMPLE_COMMAND;
   simple_command->input = 0;
@@ -194,6 +194,7 @@ get_first_operator(char* input_string)
         return first_op;
         break;
       case '\0':
+      case ')':
         first_op.start_location = -1;
         first_op.cmd_type = SIMPLE_COMMAND;
         return first_op;
@@ -210,7 +211,7 @@ convert_string_to_command_tree(char* input_string,
   command_stream_t prev_command_tree)
 {
   command_stream_t current_command_tree;
-  command_t root_command;
+  command_t root_command = malloc(sizeof(command));
   command_t current_command = root_command;
 
   prev_command_tree->next_command = current_command_tree;
@@ -228,10 +229,50 @@ convert_string_to_command_tree(char* input_string,
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
       // TODO: simple command case
+
+      //Allocate space for the simple command found and store
+      //the command in a new buffer
+      char* buffer = malloc((first_op.start_location - firstChar + 1) * sizeof(char));
+      memcpy(buffer, firstChar, first_op.start_location - firstChar);
+      buffer[first_op.start_location - firstChar] = '\0';
+
+      //Allocate the current command node to contain the simple command.
+      //At this point the parsing should either have reached the end of
+      //sub shell command or the end of the whole shell command. In both
+      //cases the algorithm should terminate
+      current_command = malloc(sizeof(command));
+      current_command = parse_simple_command(buffer);
+      break;
     }
     else
     {
       // TODO: OR_COMMAND, AND_COMMAND, SEQUENCE_COMMAND, PIPE_COMMAND
+
+      //Allocate space for the simple command up to the found operator and 
+      //copy into the new buffer
+      char* buffer = malloc((first_op.start_location - firstChar + 1) * sizeof(char));
+      memcpy(buffer, firstChar, first_op.start_location - firstChar);
+      buffer[first_op.start_location - firstChar] = '\0';
+      firstChar += first_op.start_location;
+
+      //Allocate the current command to contain the simple command up 
+      //to the found operator. Use parse_simple_command to populate the
+      //new node appropriately
+      current_command = malloc(sizeof(command));
+      current_command = parse_simple_command(buffer);
+
+      //Create the new root of the command tree and assign the command
+      //type to be that of the found operator. Connect the new root with
+      //the old root
+      command_stream_t new_node = malloc(sizeof(command_stream));
+      new_node->u.command[0] = root_command;
+      root_command = new_node;
+      root_command->u.command[1] = NULL;
+      root_command->command_type = first_op.cmd_type;
+
+      //Assign the right node of the new root to be the next command
+      //to be populated
+      current_command = root_command->u.command[1]
     }
   }
 }
@@ -242,18 +283,28 @@ split_to_command_trees(char* input_string)
   int num_trees = 0;
 
   char** command_tree_strings = strtok_str(input_string, "\n\n", &num_trees);
-  command_stream_t prev_command_tree;
-  prev_command_tree->current_command = NULL;
-  prev_command_tree->next_command = NULL;
-  command_stream_t first_command_tree = prev_command_tree;
+  command_stream_t head;
+  command_stream_t cur;
 
   int i;
   for (i = 0; i < num_trees; ++i)
   {
-    convert_string_to_command_tree(command_tree_strings[i], prev_command_tree);
+    if(i == 0)
+    {
+      head = malloc(sizeof(command_stream));
+      cur = head;
+    }
+    else
+    {
+      cur->next = malloc(sizeof(command_stream));
+      cur = cur_command->next;
+    }
+    cur->command_tree = malloc(sizeof(command));
+    convert_string_to_command_tree(command_tree_strings[i], cur->command_tree);
+    cur->next = NULL;
   }
 
-  return first_command_tree;
+  return head;
 }
 
 command_stream_t
