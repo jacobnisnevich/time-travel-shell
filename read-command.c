@@ -35,17 +35,9 @@ char**
 strtok_str(char* input_string, char* delimiter, int* num_trees)
 {
   size_t input_string_size = strlen(input_string);
-
   size_t delimiter_size = strlen(delimiter);
-
   char** split_input = malloc(255 * sizeof(char*));
-  size_t split_input_size = 0;
-
   char* buffer = malloc(sizeof(char));
-  size_t buffer_start = 0;
-  char* matching_string = malloc(input_string_size * sizeof(char));
-  size_t match_start = 0;
-  char* token_string = malloc(input_string_size * sizeof(char));
 
   char* start = input_string;
   char* end = strstr(input_string, delimiter);
@@ -70,14 +62,52 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   return split_input;
 }
 
-char**
+void
+convert_string_to_command_tree(char* input_string, command_stream_t prev_command_tree)
+{
+  command_stream_t current_command_tree;
+  command_t root_command;
+  commant_t current_command = root_commmand;
+
+  prev_command_tree->next_command = current_command_tree;
+  current_command_tree=>next_command = NULL;
+
+  size_t input_length = strlen(input_string);
+  char* firstChar = input_string;
+  while(*firstChar != '\0')
+    {
+      first_operator first_op = get_first_operator(input_string);
+      if (first_op->cmd_type == SUBSHELL_COMMAND)
+	{
+	  //TODO: subshell command case
+	}
+      else if (first_op->cmd_type == SIMPLE_COMMAND)
+	{
+	}
+      else
+	{
+	  //OR_COMMAND, AND_COMMAND, SEQUENCE_COMMAND, PIPE_COMMAND
+	}
+    }
+  
+}
+
+command_stream_t
 split_to_command_trees(char* input_string)
 {
   int num_trees = 0;
 
-  char** command_trees = strtok_str(input_string, "\n\n", &num_trees);
-
-  return command_trees;
+  char** command_tree_strings = strtok_str(input_string, "\n\n", &num_trees);
+  command_stream_t prev_command_tree;
+  prev_command_tree->current_command = NULL;
+  prev_command_tree->next_command = NULL;
+  int i = 0;
+  command_stream_t first_command_tree = prev_command_tree;
+  for(; i < num_trees; ++i)
+    {
+      convert_string_to_command_tree(command_tree_strings[i], prev_command_tree)
+    }
+  return first_command_tree;
 }
 
 first_operator
@@ -102,21 +132,37 @@ get_first_operator(char* input_string)
         return first_op;
         break;
       case '&':
-        if (i == 0)
+        if (input_string[i + 1] == '&')
         {
-          first_op.error = "AND operator with no left operand";
-          return first_op;
-        }
-        else if (input_string[i - 1] == '&')
-        {
-          first_op.start_location = i - 1;
+          first_op.start_location = i;
           first_op.cmd_type = AND_COMMAND;
           return first_op;
         }
         break;
       case '|':
+	first_op.start_location = i;
+	if (input_string[i + 1] == '|')
+	  {
+	    first_op.cmd_type = OR_COMMAND;
+	  }
+	else
+	  {
+	    first_op.cmd_type == PIPE_COMMAND;
+	  }
+	return first_op;
         break;
-
+    case ';':
+    case '\n':
+      first_op.start_location = i;
+      first_op.cmd_type = SEQUENCE_COMMAND;
+      return first_op;
+      break;
+    case '\0':
+      first_op.start_location = -1;
+      first_op.cmd_type = SIMPLE_COMMAND;
+      return first_op;
+    default:
+      break;
     }
   }
 }
