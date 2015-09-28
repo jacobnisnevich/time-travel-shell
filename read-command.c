@@ -62,52 +62,88 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   return split_input;
 }
 
-void
-convert_string_to_command_tree(char* input_string, command_stream_t prev_command_tree)
+command_t
+parse_simple_command(char* command_str)
 {
-  command_stream_t current_command_tree;
-  command_t root_command;
-  commant_t current_command = root_commmand;
+  command_t simple_command;
 
-  prev_command_tree->next_command = current_command_tree;
-  current_command_tree=>next_command = NULL;
+  simple_command->type = SIMPLE_COMMAND;
+  simple_command->input = 0;
+  simple_command->output = 0;
 
-  size_t input_length = strlen(input_string);
-  char* firstChar = input_string;
-  while(*firstChar != '\0')
+  int word_start = 0, word_end = 0, 
+      input_start = 0, input_end = 0, 
+      output_start = 0, output_end = 0;
+
+  size_t i;
+  for (i = 0; i < strlen(command_str); ++i)
+  {
+    if ((command_str[i] == '<' || command_str[i] == '>') && word_end == 0)
     {
-      first_operator first_op = get_first_operator(input_string);
-      if (first_op->cmd_type == SUBSHELL_COMMAND)
-	{
-	  //TODO: subshell command case
-	}
-      else if (first_op->cmd_type == SIMPLE_COMMAND)
-	{
-	}
-      else
-	{
-	  //OR_COMMAND, AND_COMMAND, SEQUENCE_COMMAND, PIPE_COMMAND
-	}
+      word_end = i - 1;
     }
-  
-}
 
-command_stream_t
-split_to_command_trees(char* input_string)
-{
-  int num_trees = 0;
-
-  char** command_tree_strings = strtok_str(input_string, "\n\n", &num_trees);
-  command_stream_t prev_command_tree;
-  prev_command_tree->current_command = NULL;
-  prev_command_tree->next_command = NULL;
-  int i = 0;
-  command_stream_t first_command_tree = prev_command_tree;
-  for(; i < num_trees; ++i)
+    if (command_str[i] == '>' && input_start == 0)
     {
-      convert_string_to_command_tree(command_tree_strings[i], prev_command_tree)
+      output_start = i + 1;
+    } 
+    else if (command_str[i] == '>' && input_start != 0)
+    {
+      output_start = i + 1;
+      input_end = i - 1;
     }
-  return first_command_tree;
+    else if (command_str[i] == '<' && output_start == 0)
+    {
+      input_start = i + 1;
+    } 
+    else if (command_str[i] == '<' && output_start != 0)
+    {
+      input_start = i + 1;
+      output_end = i - 1;
+    }
+  }
+
+  if (word_end == 0)
+  {
+    word_end = strlen(command_str);
+  }
+  if (output_end == 0 && output_start != 0)
+  {
+    output_end = strlen(command_str);
+  }
+  if (input_end == 0 && input_start != 0)
+  {
+    input_end = strlen(command_str);
+  }
+
+  if (input_end != 0)
+  {
+    simple_command->input = malloc((input_end - input_start + 1) * 
+      sizeof(char));
+    memcpy(simple_command->input, command_str + input_start, 
+      input_end - input_start);
+    simple_command->input[input_end - input_start] = '\0';
+  }
+  if (output_end != 0)
+  {
+    simple_command->output = malloc((output_end - output_start + 1) * 
+      sizeof(char));
+    memcpy(simple_command->output, command_str + output_start, 
+      output_end - output_start);
+    simple_command->output[output_end - output_start] = '\0';
+  }
+
+  char* words = malloc((word_end + 1) * sizeof(char));
+  memcpy(words, command_str, word_end);
+  words[word_end] = '\0';
+
+  int num_words = 0;
+  char** word_split = strtok_str(words, " ", &num_words);
+
+  simple_command->u.word = malloc(num_words * sizeof(char*));
+  simple_command->u.word = word_split;
+
+  return simple_command;
 }
 
 first_operator
@@ -140,31 +176,84 @@ get_first_operator(char* input_string)
         }
         break;
       case '|':
-	first_op.start_location = i;
-	if (input_string[i + 1] == '|')
-	  {
-	    first_op.cmd_type = OR_COMMAND;
-	  }
-	else
-	  {
-	    first_op.cmd_type == PIPE_COMMAND;
-	  }
-	return first_op;
+        first_op.start_location = i;
+        if (input_string[i + 1] == '|')
+        {
+          first_op.cmd_type = OR_COMMAND;
+        }
+        else
+        {
+          first_op.cmd_type == PIPE_COMMAND;
+        }
+        return first_op;
         break;
-    case ';':
-    case '\n':
-      first_op.start_location = i;
-      first_op.cmd_type = SEQUENCE_COMMAND;
-      return first_op;
-      break;
-    case '\0':
-      first_op.start_location = -1;
-      first_op.cmd_type = SIMPLE_COMMAND;
-      return first_op;
-    default:
-      break;
+      case ';':
+      case '\n':
+        first_op.start_location = i;
+        first_op.cmd_type = SEQUENCE_COMMAND;
+        return first_op;
+        break;
+      case '\0':
+        first_op.start_location = -1;
+        first_op.cmd_type = SIMPLE_COMMAND;
+        return first_op;
+      default:
+        break;
     }
   }
+
+  return first_op;
+}
+
+void
+convert_string_to_command_tree(char* input_string, 
+  command_stream_t prev_command_tree)
+{
+  command_stream_t current_command_tree;
+  command_t root_command;
+  command_t current_command = root_command;
+
+  prev_command_tree->next_command = current_command_tree;
+  current_command_tree->next_command = NULL;
+
+  size_t input_length = strlen(input_string);
+  char* firstChar = input_string;
+  while (*firstChar != '\0')
+  {
+    first_operator first_op = get_first_operator(input_string);
+    if (first_op.cmd_type == SUBSHELL_COMMAND)
+	  {
+      // TODO: subshell command case
+    }
+    else if (first_op.cmd_type == SIMPLE_COMMAND)
+    {
+      // TODO: simple command case
+    }
+    else
+    {
+      // TODO: OR_COMMAND, AND_COMMAND, SEQUENCE_COMMAND, PIPE_COMMAND
+    }
+  }
+}
+
+command_stream_t
+split_to_command_trees(char* input_string)
+{
+  int num_trees = 0;
+
+  char** command_tree_strings = strtok_str(input_string, "\n\n", &num_trees);
+  command_stream_t prev_command_tree;
+  prev_command_tree->current_command = NULL;
+  prev_command_tree->next_command = NULL;
+  command_stream_t first_command_tree = prev_command_tree;
+
+  int i;
+  for (i = 0; i < num_trees; ++i)
+  {
+    convert_string_to_command_tree(command_tree_strings[i], prev_command_tree);
+  }
+
+  return first_command_tree;
 }
 
 command_stream_t
@@ -194,7 +283,8 @@ make_command_stream (int (*get_next_byte) (void *),
     next_byte = get_next_byte(get_next_byte_argument);
   }
 
-  char** command_trees = split_to_command_trees(input_string);
+  // command_stream_t command_trees = split_to_command_trees(input_string);
+  parse_simple_command("cat < simple.sh > out.sh");
 
   return 0;
 }
