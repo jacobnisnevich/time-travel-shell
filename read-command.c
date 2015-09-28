@@ -1,4 +1,4 @@
-// UCLA CS 111 Lab 1 command reading
+ // UCLA CS 111 Lab 1 command reading
 
 #include "command.h"
 #include "command-internals.h"
@@ -26,7 +26,7 @@ typedef struct
 first_operator
 {
   int cmd_type;
-  int start_location;
+  char* start_location;
   char* error;
 } first_operator;
 
@@ -65,7 +65,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
 command_t
 parse_simple_command(char* command_str)
 {
-  command_t simple_command = malloc(sizeof(command));
+  command_t simple_command = malloc(sizeof(struct command));
 
   simple_command->type = SIMPLE_COMMAND;
   simple_command->input = 0;
@@ -163,20 +163,20 @@ get_first_operator(char* input_string)
     switch (ch)
     {
       case '(':
-        first_op.start_location = i;
+        first_op.start_location = &input_string[i];
         first_op.cmd_type = SUBSHELL_COMMAND;
         return first_op;
         break;
       case '&':
         if (input_string[i + 1] == '&')
         {
-          first_op.start_location = i;
+          first_op.start_location = &input_string[i];
           first_op.cmd_type = AND_COMMAND;
           return first_op;
         }
         break;
       case '|':
-        first_op.start_location = i;
+        first_op.start_location = &input_string[i];
         if (input_string[i + 1] == '|')
         {
           first_op.cmd_type = OR_COMMAND;
@@ -189,13 +189,13 @@ get_first_operator(char* input_string)
         break;
       case ';':
       case '\n':
-        first_op.start_location = i;
+        first_op.start_location = &input_string[i];
         first_op.cmd_type = SEQUENCE_COMMAND;
         return first_op;
         break;
       case '\0':
       case ')':
-        first_op.start_location = -1;
+        first_op.start_location = &input_string[i];
         first_op.cmd_type = SIMPLE_COMMAND;
         return first_op;
       default:
@@ -208,14 +208,10 @@ get_first_operator(char* input_string)
 
 void
 convert_string_to_command_tree(char* input_string, 
-  command_stream_t prev_command_tree)
+  command_t final_root)
 {
-  command_stream_t current_command_tree;
-  command_t root_command = malloc(sizeof(command));
+  command_t root_command = malloc(sizeof(struct command));
   command_t current_command = root_command;
-
-  prev_command_tree->next_command = current_command_tree;
-  current_command_tree->next_command = NULL;
 
   size_t input_length = strlen(input_string);
   char* firstChar = input_string;
@@ -240,7 +236,7 @@ convert_string_to_command_tree(char* input_string,
       //At this point the parsing should either have reached the end of
       //sub shell command or the end of the whole shell command. In both
       //cases the algorithm should terminate
-      current_command = malloc(sizeof(command));
+      current_command = malloc(sizeof(struct command));
       current_command = parse_simple_command(buffer);
       break;
     }
@@ -253,28 +249,29 @@ convert_string_to_command_tree(char* input_string,
       char* buffer = malloc((first_op.start_location - firstChar + 1) * sizeof(char));
       memcpy(buffer, firstChar, first_op.start_location - firstChar);
       buffer[first_op.start_location - firstChar] = '\0';
-      firstChar += first_op.start_location;
+      firstChar = first_op.start_location;
 
       //Allocate the current command to contain the simple command up 
       //to the found operator. Use parse_simple_command to populate the
       //new node appropriately
-      current_command = malloc(sizeof(command));
+      current_command = malloc(sizeof(struct command));
       current_command = parse_simple_command(buffer);
 
       //Create the new root of the command tree and assign the command
       //type to be that of the found operator. Connect the new root with
       //the old root
-      command_stream_t new_node = malloc(sizeof(command_stream));
+      command_t new_node = malloc(sizeof(struct command_stream));
       new_node->u.command[0] = root_command;
       root_command = new_node;
       root_command->u.command[1] = NULL;
-      root_command->command_type = first_op.cmd_type;
+      root_command->type = first_op.cmd_type;
 
       //Assign the right node of the new root to be the next command
       //to be populated
-      current_command = root_command->u.command[1]
+      current_command = root_command->u.command[1];
     }
   }
+  final_root = root_command;
 }
 
 command_stream_t
@@ -291,15 +288,15 @@ split_to_command_trees(char* input_string)
   {
     if(i == 0)
     {
-      head = malloc(sizeof(command_stream));
+      head = malloc(sizeof(struct command_stream));
       cur = head;
     }
     else
     {
-      cur->next = malloc(sizeof(command_stream));
-      cur = cur_command->next;
+      cur->next = malloc(sizeof(struct command_stream));
+      cur = cur->next;
     }
-    cur->command_tree = malloc(sizeof(command));
+    cur->command_tree = malloc(sizeof(struct command));
     convert_string_to_command_tree(command_tree_strings[i], cur->command_tree);
     cur->next = NULL;
   }
@@ -344,11 +341,11 @@ command_t
 read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
-  command_t current_command = s->current_command;
+  command_t current_command = s->command_tree;
 
   if (s)
   {
-    s = s->next_command;
+    s = s->next;
   }
 
   return current_command;
