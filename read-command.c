@@ -183,7 +183,7 @@ get_first_operator(char* input_string)
         }
         else
         {
-          first_op.cmd_type == PIPE_COMMAND;
+          first_op.cmd_type = PIPE_COMMAND;
         }
         return first_op;
         break;
@@ -228,7 +228,8 @@ convert_string_to_command_tree(char* input_string,
 
       //Allocate space for the simple command found and store
       //the command in a new buffer
-      char* buffer = malloc((first_op.start_location - firstChar + 1) * sizeof(char));
+      char* buffer = malloc((first_op.start_location - firstChar + 1) * 
+        sizeof(char));
       memcpy(buffer, firstChar, first_op.start_location - firstChar);
       buffer[first_op.start_location - firstChar] = '\0';
 
@@ -246,7 +247,8 @@ convert_string_to_command_tree(char* input_string,
 
       //Allocate space for the simple command up to the found operator and 
       //copy into the new buffer
-      char* buffer = malloc((first_op.start_location - firstChar + 1) * sizeof(char));
+      char* buffer = malloc((first_op.start_location - firstChar + 1) * 
+        sizeof(char));
       memcpy(buffer, firstChar, first_op.start_location - firstChar);
       buffer[first_op.start_location - firstChar] = '\0';
       firstChar = first_op.start_location;
@@ -332,7 +334,9 @@ make_command_stream (int (*get_next_byte) (void *),
   }
 
   // command_stream_t command_trees = split_to_command_trees(input_string);
-  parse_simple_command("cat < simple.sh > out.sh");
+  // parse_simple_command("cat < simple.sh > out.sh");
+  first_operator firstop = get_first_operator(input_string);
+  printf("%d\n", firstop.cmd_type);
 
   return 0;
 }
