@@ -265,8 +265,8 @@ convert_string_to_command_tree(char* input_string,
   command_t current_command = root_command;
 
   size_t input_length = strlen(input_string);
-  char* firstChar = input_string;
-  while (*firstChar != '\0')
+  char* first_char = input_string;
+  while (*first_char != '\0')
   {
     first_operator first_op = get_first_operator(input_string);
     if (first_op.cmd_type == SUBSHELL_COMMAND)
@@ -281,10 +281,10 @@ convert_string_to_command_tree(char* input_string,
 
       // Allocate space for the simple command found and store
       // the command in a new buffer
-      char* buffer = malloc((first_op.start_location - firstChar + 1) * 
+      char* buffer = malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
-      memcpy(buffer, firstChar, first_op.start_location - firstChar);
-      buffer[first_op.start_location - firstChar] = '\0';
+      memcpy(buffer, first_char, first_op.start_location - first_char);
+      buffer[first_op.start_location - first_char] = '\0';
 
       // Allocate the current command node to contain the simple command.
       // At this point the parsing should either have reached the end of
@@ -300,11 +300,11 @@ convert_string_to_command_tree(char* input_string,
 
       // Allocate space for the simple command up to the found operator and 
       // copy into the new buffer
-      char* buffer = malloc((first_op.start_location - firstChar + 1) * 
+      char* buffer = malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
-      memcpy(buffer, firstChar, first_op.start_location - firstChar);
-      buffer[first_op.start_location - firstChar] = '\0';
-      firstChar = first_op.start_location;
+      memcpy(buffer, first_char, first_op.start_location - first_char);
+      buffer[first_op.start_location - first_char] = '\0';
+      first_char = first_op.start_location;
 
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
