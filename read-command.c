@@ -201,7 +201,7 @@ first_operator
 get_first_operator(char* input_string)
 {
   first_operator first_op;
-  first_op.start_location = -1;
+  first_op.start_location = NULL;
   first_op.cmd_type = -1;
   first_op.error = "";
 
@@ -313,7 +313,7 @@ convert_string_to_command_tree(char* input_string)
     else if(first_op.cmd_type == SEQUENCE_COMMAND)
     {
       // Alocate space for the simple command up to the found semicolon
-      char* buffer = malloc((first_op.start_location = first_char + 1) *
+      char* buffer = malloc((first_op.start_location - first_char + 1) *
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
@@ -322,23 +322,23 @@ convert_string_to_command_tree(char* input_string)
 
       // Allocate the new root of the tree and connect it with the
       // old root
-      if (root_command = NULL)
+      if (root_command == NULL)
       {
-        root_command = malloc(size_of(command));
+        root_command = malloc(sizeof(struct command));
         root_command->type = SEQUENCE_COMMAND;
-        root_command->command[0] = parse_simple_command(buffer);
+        root_command->u.command[0] = parse_simple_command(buffer);
       }
       else
       {
         current_command = parse_simple_command(buffer);
-        command_t temp = malloc(sizeof(command));
+        command_t temp = malloc(sizeof(struct command));
         temp->type = SEQUENCE_COMMAND;
-        temp->command[0] = root_command;
+        temp->u.command[0] = root_command;
         root_command = temp;
       }
 
       //Create the rest of the command tree recursively
-      root_command->command[1] = convert_string_to_command_tree(first_char);
+      root_command->u.command[1] = convert_string_to_command_tree(first_char);
       break;
 
     }
@@ -390,27 +390,27 @@ split_to_command_trees(char* input_string)
   int num_trees = 0;
 
   char** command_tree_strings = strtok_str(input_string, "\n\n", &num_trees);
-  command_stream_t head;
-  command_stream_t cur;
+  command_stream_t head = NULL;
+  command_stream_t cur = NULL;
 
   int i;
   for (i = 0; i < num_trees; ++i)
   {
     if(i == 0)
     {
-      head = malloc(sizeof(struct command_stream));
+      head = malloc(sizeof(command_stream_t));
       cur = head;
+      cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
+      cur->next = NULL;
     }
     else
     {
-      cur->next = malloc(sizeof(struct command_stream));
+      cur->next = malloc(sizeof(command_stream_t));
       cur = cur->next;
+      cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
+      cur->next = NULL;
     }
-    cur->command_tree = malloc(sizeof(struct command));
-    convert_string_to_command_tree(command_tree_strings[i], cur->command_tree);
-    cur->next = NULL;
   }
-
   return head;
 }
 
