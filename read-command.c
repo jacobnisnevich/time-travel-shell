@@ -257,11 +257,10 @@ get_first_operator(char* input_string)
   return first_op;
 }
 
-void
-convert_string_to_command_tree(char* input_string, 
-  command_t final_root)
+command_t
+convert_string_to_command_tree(char* input_string)
 {
-  command_t root_command = malloc(sizeof(struct command));
+  command_t root_command = NULL;
   command_t current_command = root_command;
 
   size_t input_length = strlen(input_string);
@@ -273,7 +272,20 @@ convert_string_to_command_tree(char* input_string,
 	  {
       // TODO: subshell command case
 
-      
+      // Allocate space for the simple command up to the '('
+      // and store in a new buffer
+
+      char* buffer = malloc((first_op.start_location - first_char + 1) * 
+        sizeof(char));
+      memcpy(buffer, first_char, first_op.start_location - first_char);
+      buffer[first_op.start_location - first_char] = '\0';
+
+      // Get the command string contained within the ()
+      int length = 0;
+      char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, &length);
+      first_char += length;
+
+      current_command = convert_string_to_command_tree(sub_command);
     }
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
@@ -286,17 +298,53 @@ convert_string_to_command_tree(char* input_string,
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
 
-      // Allocate the current command node to contain the simple command.
-      // At this point the parsing should either have reached the end of
-      // sub shell command or the end of the whole shell command. In both
-      // cases the algorithm should terminate
-      current_command = malloc(sizeof(struct command));
-      current_command = parse_simple_command(buffer);
+      // Call parse simple command to generate the new node in the command tree
+      if(root_command == NULL)
+      {
+        root_command = parse_simple_command(buffer);
+      }
+      else
+      {
+        current_command = parse_simple_command(buffer);
+      }
+      
       break;
+    }
+    else if(first_op.cmd_type == SEQUENCE_COMMAND)
+    {
+      // Alocate space for the simple command up to the found semicolon
+      char* buffer = malloc((first_op.start_location = first_char + 1) *
+        sizeof(char));
+      memcpy(buffer, first_char, first_op.start_location - first_char);
+      buffer[first_op.start_location - first_char] = '\0';
+      first_char = first_op.start_location;
+      first_char++; // Advance past the semicolon
+
+      // Allocate the new root of the tree and connect it with the
+      // old root
+      if (root_command = NULL)
+      {
+        root_command = malloc(size_of(command));
+        root_command->type = SEQUENCE_COMMAND;
+        root_command->command[0] = parse_simple_command(buffer);
+      }
+      else
+      {
+        current_command = parse_simple_command(buffer);
+        command_t temp = malloc(sizeof(command));
+        temp->type = SEQUENCE_COMMAND;
+        temp->command[0] = root_command;
+        root_command = temp;
+      }
+
+      //Create the rest of the command tree recursively
+      root_command->command[1] = convert_string_to_command_tree(first_char);
+      break;
+
     }
     else
     {
-      // TODO: OR_COMMAND, AND_COMMAND, SEQUENCE_COMMAND, PIPE_COMMAND
+      // TODO: OR_COMMAND, AND_COMMAND, PIPE_COMMAND
 
       // Allocate space for the simple command up to the found operator and 
       // copy into the new buffer
@@ -305,13 +353,20 @@ convert_string_to_command_tree(char* input_string,
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
       first_char = first_op.start_location;
+      first_char++;
+      first_char++; // Advance past the delimiter
 
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
       // new node appropriately
-      current_command = malloc(sizeof(struct command));
-      current_command = parse_simple_command(buffer);
-
+      if (root_command == NULL)
+      {
+        root_command = parse_simple_command(buffer);
+      }
+      else
+      {
+        current_command = parse_simple_command(buffer);
+      }
       // Create the new root of the command tree and assign the command
       // type to be that of the found operator. Connect the new root with
       // the old root
@@ -326,7 +381,7 @@ convert_string_to_command_tree(char* input_string,
       current_command = root_command->u.command[1];
     }
   }
-  final_root = root_command;
+  return root_command;
 }
 
 command_stream_t
