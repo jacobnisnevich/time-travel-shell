@@ -59,14 +59,14 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
 {
   size_t input_string_size = strlen(input_string);
   size_t delimiter_size = strlen(delimiter);
-  char** split_input = malloc(255 * sizeof(char*));
-  char* buffer = malloc(sizeof(char));
+  char** split_input = checked_malloc(255 * sizeof(char*));
+  char* buffer = checked_malloc(sizeof(char));
 
   char* start = input_string;
   char* end = strstr(input_string, delimiter);
   while(end != NULL)
     {
-      buffer = realloc(buffer, (end - start + 1) * sizeof(char));
+      buffer = checked_realloc(buffer, (end - start + 1) * sizeof(char));
       memcpy(buffer, start, end - start);
       buffer[end - start] = '\0';
       split_input[*num_trees] = buffer;
@@ -75,11 +75,11 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
       end = strstr(start, delimiter);
     }
 
-  buffer = realloc(buffer, &input_string[input_string_size] - start);
+  buffer = checked_realloc(buffer, &input_string[input_string_size] - start);
   memcpy(buffer, start, &input_string[input_string_size] - start);
   buffer[&input_string[input_string_size] - start] = '\0';
 
-  split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
+  split_input[*num_trees] = checked_malloc(strlen(buffer) * sizeof(char));
   memcpy(split_input[(*num_trees)++], buffer, strlen(buffer));
 
   return split_input;
@@ -129,7 +129,7 @@ get_outer_subshell_cmd_str(char* input_string,
     }
   }
 
-  char* subshell_str = malloc((*num_chars + 1) * sizeof(char));
+  char* subshell_str = checked_malloc((*num_chars + 1) * sizeof(char));
   memcpy(subshell_str, input_string + start_char, *num_chars);
   subshell_str[*num_chars] = '\0';
 
@@ -139,7 +139,7 @@ get_outer_subshell_cmd_str(char* input_string,
 command_t
 parse_simple_command(char* command_str)
 {
-  command_t simple_command = malloc(sizeof(struct command));
+  command_t simple_command = checked_malloc(sizeof(struct command));
 
   simple_command->type = SIMPLE_COMMAND;
   simple_command->input = 0;
@@ -192,7 +192,7 @@ parse_simple_command(char* command_str)
 
   if (input_end != 0)
   {
-    simple_command->input = malloc((input_end - input_start + 1) * 
+    simple_command->input = checked_malloc((input_end - input_start + 1) * 
       sizeof(char));
     memcpy(simple_command->input, command_str + input_start, 
       input_end - input_start);
@@ -201,7 +201,7 @@ parse_simple_command(char* command_str)
   }
   if (output_end != 0)
   {
-    simple_command->output = malloc((output_end - output_start + 1) * 
+    simple_command->output = checked_malloc((output_end - output_start + 1) * 
       sizeof(char));
     memcpy(simple_command->output, command_str + output_start, 
       output_end - output_start);
@@ -209,14 +209,14 @@ parse_simple_command(char* command_str)
     simple_command->output = strstrip(simple_command->output);
   }
 
-  char* words = malloc((word_end + 1) * sizeof(char));
+  char* words = checked_malloc((word_end + 1) * sizeof(char));
   memcpy(words, command_str, word_end);
   words[word_end] = '\0';
 
   int num_words = 0;
   char** word_split = strtok_str(strstrip(words), " ", &num_words);
 
-  simple_command->u.word = malloc(num_words * sizeof(char*));
+  simple_command->u.word = checked_malloc(num_words * sizeof(char*));
   simple_command->u.word = word_split;
 
   return simple_command;
@@ -300,7 +300,7 @@ convert_string_to_command_tree(char* input_string)
       // Allocate space for the simple command up to the '('
       // and store in a new buffer
 
-      char* buffer = malloc((first_op.start_location - first_char + 1) * 
+      char* buffer = checked_malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
@@ -318,7 +318,7 @@ convert_string_to_command_tree(char* input_string)
 
       // Allocate space for the simple command found and store
       // the command in a new buffer
-      char* buffer = malloc((first_op.start_location - first_char + 1) * 
+      char* buffer = checked_malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
@@ -338,7 +338,7 @@ convert_string_to_command_tree(char* input_string)
     else if (first_op.cmd_type == SEQUENCE_COMMAND)
     {
       // Allocate space for the simple command up to the found semicolon
-      char* buffer = malloc((first_op.start_location - first_char + 1) *
+      char* buffer = checked_malloc((first_op.start_location - first_char + 1) *
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
@@ -349,14 +349,14 @@ convert_string_to_command_tree(char* input_string)
       // old root
       if (root_command == NULL)
       {
-        root_command = malloc(sizeof(struct command));
+        root_command = checked_malloc(sizeof(struct command));
         root_command->type = SEQUENCE_COMMAND;
         root_command->u.command[0] = parse_simple_command(buffer);
       }
       else
       {
         current_command = parse_simple_command(buffer);
-        command_t temp = malloc(sizeof(struct command));
+        command_t temp = checked_malloc(sizeof(struct command));
         temp->type = SEQUENCE_COMMAND;
         temp->u.command[0] = root_command;
         root_command = temp;
@@ -373,7 +373,7 @@ convert_string_to_command_tree(char* input_string)
 
       // Allocate space for the simple command up to the found operator and 
       // copy into the new buffer
-      char* buffer = malloc((first_op.start_location - first_char + 1) * 
+      char* buffer = checked_malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
@@ -396,7 +396,7 @@ convert_string_to_command_tree(char* input_string)
       // Create the new root of the command tree and assign the command
       // type to be that of the found operator. Connect the new root with
       // the old root
-      command_t new_node = malloc(sizeof(struct command_stream));
+      command_t new_node = checked_malloc(sizeof(struct command_stream));
       new_node->u.command[0] = root_command;
       root_command = new_node;
       root_command->u.command[1] = NULL;
@@ -424,14 +424,14 @@ split_to_command_trees(char* input_string)
   {
     if (i == 0)
     {
-      head = malloc(sizeof(command_stream_t));
+      head = checked_malloc(sizeof(command_stream_t));
       cur = head;
       cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
       cur->next = NULL;
     }
     else
     {
-      cur->next = malloc(sizeof(command_stream_t));
+      cur->next = checked_malloc(sizeof(command_stream_t));
       cur = cur->next;
       cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
       cur->next = NULL;
@@ -447,7 +447,7 @@ make_command_stream (int (*get_next_byte) (void *),
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  char* input_string = (char*) malloc(255 * sizeof(char));
+  char* input_string = (char*) checked_malloc(255 * sizeof(char));
   size_t input_string_size = 0;
   size_t curr_max_size = 255;
   char next_byte = get_next_byte(get_next_byte_argument);
@@ -458,7 +458,7 @@ make_command_stream (int (*get_next_byte) (void *),
 
     if (input_string_size > curr_max_size)
     {
-      input_string = realloc(input_string, 255 * sizeof(char));
+      input_string = checked_realloc(input_string, 255 * sizeof(char));
       curr_max_size += 255;
     }
 
