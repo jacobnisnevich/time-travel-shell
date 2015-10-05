@@ -324,7 +324,7 @@ convert_string_to_command_tree(char* input_string)
       buffer[first_op.start_location - first_char] = '\0';
 
       // Call parse simple command to generate the new node in the command tree
-      if(root_command == NULL)
+      if (root_command == NULL)
       {
         root_command = parse_simple_command(buffer);
       }
@@ -335,9 +335,9 @@ convert_string_to_command_tree(char* input_string)
       
       break;
     }
-    else if(first_op.cmd_type == SEQUENCE_COMMAND)
+    else if (first_op.cmd_type == SEQUENCE_COMMAND)
     {
-      // Alocate space for the simple command up to the found semicolon
+      // Allocate space for the simple command up to the found semicolon
       char* buffer = malloc((first_op.start_location - first_char + 1) *
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
@@ -362,7 +362,7 @@ convert_string_to_command_tree(char* input_string)
         root_command = temp;
       }
 
-      //Create the rest of the command tree recursively
+      // Create the rest of the command tree recursively
       root_command->u.command[1] = convert_string_to_command_tree(first_char);
       break;
 
@@ -422,7 +422,7 @@ split_to_command_trees(char* input_string)
   int i;
   for (i = 0; i < num_trees; ++i)
   {
-    if(i == 0)
+    if (i == 0)
     {
       head = malloc(sizeof(command_stream_t));
       cur = head;
