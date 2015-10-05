@@ -60,13 +60,12 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   size_t input_string_size = strlen(input_string);
   size_t delimiter_size = strlen(delimiter);
   char** split_input = checked_malloc(255 * sizeof(char*));
-  char* buffer = checked_malloc(sizeof(char));
 
   char* start = input_string;
   char* end = strstr(input_string, delimiter);
   while(end != NULL)
     {
-      buffer = checked_realloc(buffer, (end - start + 1) * sizeof(char));
+      char* buffer = checked_malloc((end - start + 1) * sizeof(char));
       memcpy(buffer, start, end - start);
       buffer[end - start] = '\0';
       split_input[*num_trees] = buffer;
@@ -75,7 +74,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
       end = strstr(start, delimiter);
     }
 
-  buffer = checked_realloc(buffer, &input_string[input_string_size] - start);
+  char* buffer = checked_malloc((&input_string[input_string_size] - start) * sizeof(char));
   memcpy(buffer, start, &input_string[input_string_size] - start);
   buffer[&input_string[input_string_size] - start] = '\0';
 
