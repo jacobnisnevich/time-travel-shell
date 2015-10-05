@@ -267,7 +267,7 @@ convert_string_to_command_tree(char* input_string)
   char* first_char = input_string;
   while (*first_char != '\0')
   {
-    first_operator first_op = get_first_operator(input_string);
+    first_operator first_op = get_first_operator(first_char);
     if (first_op.cmd_type == SUBSHELL_COMMAND)
 	  {
       // TODO: subshell command case
@@ -354,7 +354,8 @@ convert_string_to_command_tree(char* input_string)
       buffer[first_op.start_location - first_char] = '\0';
       first_char = first_op.start_location;
       first_char++;
-      first_char++; // Advance past the delimiter
+      if( first_op.cmd_type == AND_COMMAND || first_op.cmd_type == OR_COMMAND)
+	first_char++; // Advance past the delimiter
 
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
@@ -441,7 +442,7 @@ make_command_stream (int (*get_next_byte) (void *),
     next_byte = get_next_byte(get_next_byte_argument);
   }
 
-  // command_stream_t command_trees = split_to_command_trees(input_string);
+  command_stream_t command_trees = split_to_command_trees(input_string);
   // parse_simple_command("cat < simple.sh > out.sh");
   // first_operator firstop = get_first_operator(input_string);
 
