@@ -66,11 +66,11 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   char* end = strstr(input_string, delimiter);
   while(end != NULL)
     {
-      buffer = realloc(buffer, (end - start + 1) * sizeof(char*));
+      buffer = realloc(buffer, (end - start + 1) * sizeof(char));
       memcpy(buffer, start, end - start);
       buffer[end - start] = '\0';
-      split_input[*num_trees] = malloc(strlen(buffer) * sizeof(char));
-      memcpy(split_input[(*num_trees)++], buffer, strlen(buffer));
+      split_input[*num_trees] = buffer;
+      (*num_trees)++;
       start += end - start + delimiter_size;
       end = strstr(start, delimiter);
     }
