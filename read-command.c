@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -30,6 +31,28 @@ first_operator
   char* error;
 } first_operator;
 
+// from Linux kernel string functions
+char*
+strstrip(char *s)
+{
+  size_t size;
+  char *end;
+
+  size = strlen(s);
+
+  if (!size)
+    return s;
+
+  end = s + size - 1;
+  while (end >= s && isspace(*end))
+    end--;
+  *(end + 1) = '\0';
+
+  while (*s && isspace(*s))
+    s++;
+
+  return s;
+}
 
 char**
 strtok_str(char* input_string, char* delimiter, int* num_trees)
@@ -174,6 +197,7 @@ parse_simple_command(char* command_str)
     memcpy(simple_command->input, command_str + input_start, 
       input_end - input_start);
     simple_command->input[input_end - input_start] = '\0';
+    simple_command->input = strstrip(simple_command->input);
   }
   if (output_end != 0)
   {
@@ -182,6 +206,7 @@ parse_simple_command(char* command_str)
     memcpy(simple_command->output, command_str + output_start, 
       output_end - output_start);
     simple_command->output[output_end - output_start] = '\0';
+    simple_command->output = strstrip(simple_command->output);
   }
 
   char* words = malloc((word_end + 1) * sizeof(char));
@@ -189,7 +214,7 @@ parse_simple_command(char* command_str)
   words[word_end] = '\0';
 
   int num_words = 0;
-  char** word_split = strtok_str(words, " ", &num_words);
+  char** word_split = strtok_str(strstrip(words), " ", &num_words);
 
   simple_command->u.word = malloc(num_words * sizeof(char*));
   simple_command->u.word = word_split;
@@ -446,7 +471,7 @@ make_command_stream (int (*get_next_byte) (void *),
   // parse_simple_command("cat < simple.sh > out.sh");
   // first_operator firstop = get_first_operator(input_string);
 
-  return 0;
+  return command_trees;
 }
 
 command_t
