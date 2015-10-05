@@ -449,19 +449,19 @@ make_command_stream (int (*get_next_byte) (void *),
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  char* input_string = (char*) checked_malloc(255 * sizeof(char));
+  char* input_string = (char*) checked_malloc(256 * sizeof(char));
   size_t input_string_size = 0;
-  size_t curr_max_size = 255;
+  size_t curr_max_size = 256;
   char next_byte = get_next_byte(get_next_byte_argument);
 
   while (next_byte != EOF)
   {
     ++input_string_size;
 
-    if (input_string_size > curr_max_size)
+    if (input_string_size > curr_max_size - 1)
     {
-      input_string = checked_realloc(input_string, 255 * sizeof(char));
-      curr_max_size += 255;
+      input_string = checked_realloc(input_string, (curr_max_size + 256) * sizeof(char));
+      curr_max_size += 256;
     }
 
     input_string[input_string_size - 1] = next_byte;
@@ -469,10 +469,10 @@ make_command_stream (int (*get_next_byte) (void *),
     next_byte = get_next_byte(get_next_byte_argument);
   }
 
-  command_stream_t command_trees = split_to_command_trees(input_string);
-  // parse_simple_command("cat < simple.sh > out.sh");
-  // first_operator firstop = get_first_operator(input_string);
+  input_string[input_string_size] = '\0';
 
+  command_stream_t command_trees = split_to_command_trees(input_string);
+  
   return command_trees;
 }
 
