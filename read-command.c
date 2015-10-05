@@ -79,8 +79,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   memcpy(buffer, start, &input_string[input_string_size] - start);
   buffer[&input_string[input_string_size] - start] = '\0';
 
-  split_input[*num_trees] = checked_malloc(strlen(buffer) * sizeof(char));
-  memcpy(split_input[(*num_trees)++], buffer, strlen(buffer));
+  split_input[(*num_trees)++] = buffer;
 
   return split_input;
 }
@@ -308,6 +307,7 @@ convert_string_to_command_tree(char* input_string)
       // Get the command string contained within the ()
       int length = 0;
       char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, &length);
+      free(buffer);
       first_char += length;
 
       current_command = convert_string_to_command_tree(sub_command);
@@ -332,6 +332,7 @@ convert_string_to_command_tree(char* input_string)
       {
         current_command = parse_simple_command(buffer);
       }
+      free(buffer);
       
       break;
     }
@@ -363,6 +364,7 @@ convert_string_to_command_tree(char* input_string)
       }
 
       // Create the rest of the command tree recursively
+      free(buffer);
       root_command->u.command[1] = convert_string_to_command_tree(first_char);
       break;
 
@@ -404,6 +406,7 @@ convert_string_to_command_tree(char* input_string)
 
       // Assign the right node of the new root to be the next command
       // to be populated
+      free(buffer);
       current_command = root_command->u.command[1];
     }
   }
