@@ -74,7 +74,8 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
       end = strstr(start, delimiter);
     }
 
-  char* buffer = (char*) checked_malloc((&input_string[input_string_size] - start) * sizeof(char));
+  char* buffer = (char*) checked_malloc((&input_string[input_string_size] - 
+    start) * sizeof(char));
   memcpy(buffer, start, &input_string[input_string_size] - start);
   buffer[&input_string[input_string_size] - start] = '\0';
 
@@ -134,6 +135,130 @@ get_outer_subshell_cmd_str(char* input_string,
   return subshell_str;
 }
 
+void
+check_for_illegal_characters(char* input_string)
+{
+  size_t i;
+  for (i = 0; i < strlen(input_string); i++)
+  {
+    if (isalnum(input_string[i]) || isspace(input_string[i]) ||
+          input_string[i] == '!' || input_string[i] == '>' ||
+          input_string[i] == '%' || input_string[i] == '+' ||
+          input_string[i] == ',' || input_string[i] == '-' ||
+          input_string[i] == '.' || input_string[i] == '/' ||
+          input_string[i] == ':' || input_string[i] == '@' ||
+          input_string[i] == '^' || input_string[i] == '_' ||
+          input_string[i] == ';' || input_string[i] == '|' ||
+          input_string[i] == '&' || input_string[i] == '(' ||
+          input_string[i] == ')' || input_string[i] == '<' ||
+          input_string[i] == '>')
+    {
+      continue;
+    }
+    else
+    {
+      fprintf(stderr, "Syntax error: Illegal character %c\n", input_string[i]);
+      exit(1);
+    }
+  }
+}
+
+char*
+remove_comments(char* input_string)
+{
+  int is_comment = 0;
+
+  size_t i;
+  for (i = 0; i < strlen(input_string); i++)
+  {
+    if (input_string[i] == '#')
+    {
+      input_string[i] = ' ';
+      is_comment = 1;
+    }
+    else if (is_comment == 1)
+    {
+      if (input_string[i] == '\n')
+      {
+        input_string[i] = ' ';
+        is_comment = 0;
+      }
+      else
+      {
+        input_string[i] = ' ';
+      }
+    }
+  }
+
+  return input_string;
+}
+
+char* 
+deal_with_incomplete_commands(char* input_string)
+{
+  int is_incomplete_command = 0;
+
+  size_t i;
+  for (i = 0; i < strlen(input_string); i++)
+  {
+    if ((input_string[i] == '&' && input_string[i + 1] == '&') ||
+        (input_string[i] == '|' && input_string[i + 1] == '|'))
+    {
+      is_incomplete_command = 1;
+      i++;
+    }
+    else if (input_string[i] == '|' || input_string[i] == ';')
+    {
+      is_incomplete_command = 1;
+    }
+    else if (input_string[i] == '\n' && is_incomplete_command == 1)
+    {
+      input_string[i] = ' ';
+    }
+    else
+    {
+      is_incomplete_command = 0;
+    }
+  }
+
+  return input_string;
+}
+
+char*
+remove_whitespace_from_end(char* input_string)
+{
+  size_t i = strlen(input_string) - 1;
+  for ( ; ; i--)
+  {
+    if (input_string[i] == '\n' || input_string[i] == ' ')
+    {
+      input_string[i] = ' ';
+    }
+    else
+    {
+      break;
+    }
+
+    if (i == 0)
+    {
+      break;
+    }
+  }
+
+  return input_string;
+}
+
+char*
+preprocess_input(char* input_string)
+{
+  check_for_illegal_characters(input_string);
+  input_string = remove_comments(input_string);
+  input_string = deal_with_incomplete_commands(input_string);
+  input_string = remove_whitespace_from_end(input_string);
+
+  return input_string;
+}
+
 command_t
 parse_simple_command(char* command_str)
 {
@@ -152,9 +277,14 @@ parse_simple_command(char* command_str)
   {
     if ((command_str[i] == '<' || command_str[i] == '>') && word_end == 0)
     {
-      word_end = i - 1;
+      if (i == 0)
+      {
+        fprintf(stderr, "Syntax error: Simple command (\"%s\") contains word \
+of length 0\n", command_str);
+        exit(1);
+      }
+      word_end = i;
     }
-
     if (command_str[i] == '>' && input_start == 0)
     {
       output_start = i + 1;
@@ -162,7 +292,7 @@ parse_simple_command(char* command_str)
     else if (command_str[i] == '>' && input_start != 0)
     {
       output_start = i + 1;
-      input_end = i - 1;
+      input_end = i;
     }
     else if (command_str[i] == '<' && output_start == 0)
     {
@@ -171,7 +301,7 @@ parse_simple_command(char* command_str)
     else if (command_str[i] == '<' && output_start != 0)
     {
       input_start = i + 1;
-      output_end = i - 1;
+      output_end = i;
     }
   }
 
@@ -182,16 +312,28 @@ parse_simple_command(char* command_str)
   if (output_end == 0 && output_start != 0)
   {
     output_end = strlen(command_str);
+    if (output_start == output_end)
+    {
+      fprintf(stderr, "Syntax error: Simple command (\"%s\") contains empty \
+redirect\n", command_str);
+        exit(1);
+    }
   }
   if (input_end == 0 && input_start != 0)
   {
     input_end = strlen(command_str);
+    if (input_start == input_end)
+    {
+      fprintf(stderr, "Syntax error: Simple command (\"%s\") contains empty \
+redirect\n", command_str);
+        exit(1);
+    }
   }
 
   if (input_end != 0)
   {
-    simple_command->input = (char*) checked_malloc((input_end - input_start + 1) * 
-      sizeof(char));
+    simple_command->input = (char*) checked_malloc((input_end - input_start + 
+      1) * sizeof(char));
     memcpy(simple_command->input, command_str + input_start, 
       input_end - input_start);
     simple_command->input[input_end - input_start] = '\0';
@@ -199,8 +341,8 @@ parse_simple_command(char* command_str)
   }
   if (output_end != 0)
   {
-    simple_command->output = (char*) checked_malloc((output_end - output_start + 1) * 
-      sizeof(char));
+    simple_command->output = (char*) checked_malloc((output_end - output_start +
+      1) * sizeof(char));
     memcpy(simple_command->output, command_str + output_start, 
       output_end - output_start);
     simple_command->output[output_end - output_start] = '\0';
@@ -210,6 +352,13 @@ parse_simple_command(char* command_str)
   char* words = (char*) checked_malloc((word_end + 1) * sizeof(char));
   memcpy(words, command_str, word_end);
   words[word_end] = '\0';
+
+  if (strlen(words) == 0)
+  {
+    fprintf(stderr, "Syntax error: Simple command (\"%s\") contains word of \
+length 0\n", command_str);
+    exit(1);
+  }
 
   int num_words = 0;
   char** word_split = strtok_str(strstrip(words), " ", &num_words);
@@ -294,8 +443,8 @@ convert_string_to_command_tree(char* input_string)
     // Allocate space for the simple command up to the operator
       // and store in a new buffer
 
-      char* buffer = (char*) checked_malloc((first_op.start_location - first_char + 1) * 
-        sizeof(char));
+      char* buffer = (char*) checked_malloc((first_op.start_location - 
+        first_char + 1) * sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
       first_char = first_op.start_location;
@@ -306,7 +455,8 @@ convert_string_to_command_tree(char* input_string)
 
       // Get the command string contained within the ()
       int length = 0;
-      char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, &length);
+      char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, 
+        &length);
       free(buffer);
       first_char += length;
 
@@ -361,7 +511,6 @@ convert_string_to_command_tree(char* input_string)
     else if (first_op.cmd_type == PIPE_COMMAND)
     {
       // TODO: PIPE_COMMAND
-      // TODO: OR_COMMAND, AND_COMMAND
       first_char++;
 
       // Allocate the current command to contain the simple command up 
@@ -375,24 +524,27 @@ convert_string_to_command_tree(char* input_string)
         root_command->u.command[0] = parse_simple_command(buffer);
         root_command->u.command[1] = NULL;
         free(buffer);
-        break;
+        continue;
       }
 
       // Check the root operator. If it is of lesser precedence (AND/OR)
       // then create a new root. Otherwise, place the pipe command the same
       // as AND/OR command
-      if (root_command->type == AND_COMMAND || root_command->type == OR_COMMAND)
+      if (current_command->type == PIPE_COMMAND)
       {
-        current_command->u.command[1] = parse_simple_command(buffer);
-        command_t temp = checked_malloc(sizeof(struct command));
-        temp->u.command[0] = root_command;
-        root_command = temp;
-        current_command = root_command;
+        command_t temp = current_command->u.command[0];
+        current_command->u.command[0] = (command_t) checked_malloc(sizeof(struct 
+          command));
+        current_command->u.command[0]->u.command[0] = temp;
+        current_command->u.command[0]->u.command[1] = parse_simple_command(
+          buffer);
+        current_command->u.command[0]->type = PIPE_COMMAND;
         current_command->u.command[1] = NULL;
       }
       else
       {
-        current_command->u.command[1] = (command_t) checked_malloc(sizeof(struct command));
+        current_command->u.command[1] = (command_t) checked_malloc(sizeof(struct 
+          command));
         current_command = current_command->u.command[1];
         current_command->u.command[0] = parse_simple_command(buffer);
         current_command->type = PIPE_COMMAND;
@@ -406,27 +558,44 @@ convert_string_to_command_tree(char* input_string)
       first_char++;
 	    first_char++; // Advance past the delimiter
 
-
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
       // new node appropriately
       if (root_command == NULL)
       {
         root_command = (command_t) checked_malloc(sizeof(struct command));
+        root_command->u.command[0] = parse_simple_command(buffer);
+        root_command->type = first_op.cmd_type;
         current_command = root_command;
+        free(buffer);
+        continue;
+      }
+
+      if (current_command->type == AND_COMMAND || current_command->type == 
+        OR_COMMAND)
+      {
+        command_t temp = current_command->u.command[0];
+        enum command_type temp_type = current_command->type;
+        current_command->u.command[0] = (command_t) checked_malloc(sizeof(struct 
+          command));
+        current_command->type = first_op.cmd_type;
+        current_command->u.command[0]->u.command[0] = temp;
+        current_command->u.command[0]->u.command[1] = parse_simple_command(
+          buffer);
+        current_command->u.command[0]->type = temp_type;
+        current_command->u.command[1] = NULL;
       }
       else
       {
-        current_command->u.command[1] = (command_t) checked_malloc(sizeof(struct command));
-        current_command = current_command->u.command[1];
+        command_t temp = root_command;
+        root_command = (command_t) checked_malloc(sizeof(struct command));
+        current_command->u.command[1] = parse_simple_command(buffer);
+        root_command->u.command[0] = temp;
+        root_command->type = first_op.cmd_type;
+        current_command = root_command;
+        current_command->u.command[1] = NULL;
       }
 
-      current_command->type = first_op.cmd_type;
-      current_command->u.command[0] = parse_simple_command(buffer);
-      current_command->u.command[1] = NULL;
-
-      // Assign the right node of the new root to be the next command
-      // to be populated
       free(buffer);    
     }
   }
@@ -449,14 +618,16 @@ split_to_command_trees(char* input_string)
     {
       head = (command_stream_t) checked_malloc(sizeof(command_stream_t));
       cur = head;
-      cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
+      cur->command_tree = convert_string_to_command_tree(
+        command_tree_strings[i]);
       cur->next = NULL;
     }
     else
     {
       cur->next = (command_stream_t) checked_malloc(sizeof(command_stream_t));
       cur = cur->next;
-      cur->command_tree = convert_string_to_command_tree(command_tree_strings[i]);
+      cur->command_tree = convert_string_to_command_tree(
+        command_tree_strings[i]);
       cur->next = NULL;
     }
   }
@@ -481,7 +652,8 @@ make_command_stream (int (*get_next_byte) (void *),
 
     if (input_string_size > curr_max_size - 1)
     {
-      input_string = (char*) checked_realloc(input_string, (curr_max_size + 256) * sizeof(char));
+      input_string = (char*) checked_realloc(input_string, (curr_max_size + 
+        256) * sizeof(char));
       curr_max_size += 256;
     }
 
@@ -492,21 +664,23 @@ make_command_stream (int (*get_next_byte) (void *),
 
   input_string[input_string_size] = '\0';
 
+  input_string = preprocess_input(input_string);
+
   command_stream_t command_trees = split_to_command_trees(input_string);
 
-  return (command_stream_t) &command_trees;
+  return command_trees;
 }
 
 command_t
-read_command_stream (command_stream_t s)
+read_command_stream (command_stream_t* s)
 {
   /* FIXME: Replace this with your implementation too.  */
-  command_stream_t temp = *((command_stream_t*) s);
+  command_stream_t temp = *s;
 
   if (temp)
   {
     command_t current_command = temp->command_tree;
-    temp = temp->next;
+    *s = temp->next;
     return current_command;
   }
   else

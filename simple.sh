@@ -1,1 +1,1 @@
-diff a c > f
+a >b <
