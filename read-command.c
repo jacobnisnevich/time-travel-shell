@@ -1,4 +1,4 @@
- // UCLA CS 111 Lab 1 command reading
+// UCLA CS 111 Lab 1 command reading
 
 #include "command.h"
 #include "command-internals.h"
@@ -74,7 +74,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
       end = strstr(start, delimiter);
     }
 
-  char* buffer = (char*) checked_malloc((&input_string[input_string_size] - 
+  char* buffer = (char*) checked_malloc((1 + &input_string[input_string_size] - 
     start) * sizeof(char));
   memcpy(buffer, start, &input_string[input_string_size] - start);
   buffer[&input_string[input_string_size] - start] = '\0';
@@ -128,6 +128,12 @@ get_outer_subshell_cmd_str(char* input_string,
     }
   }
 
+  if (end_char == 0)
+    {
+      fprintf(stderr, "Syntax error: Subshell command (\"%s\") has unclosed parenthesis\n", input_string);
+      exit(1);
+    }
+  
   char* subshell_str = (char*) checked_malloc((*num_chars + 1) * sizeof(char));
   memcpy(subshell_str, input_string + start_char, *num_chars);
   subshell_str[*num_chars] = '\0';
@@ -251,8 +257,8 @@ remove_whitespace_from_end(char* input_string)
 char*
 preprocess_input(char* input_string)
 {
-  check_for_illegal_characters(input_string);
   input_string = remove_comments(input_string);
+  check_for_illegal_characters(input_string);
   input_string = deal_with_incomplete_commands(input_string);
   input_string = remove_whitespace_from_end(input_string);
 
@@ -262,6 +268,7 @@ preprocess_input(char* input_string)
 command_t
 parse_simple_command(char* command_str)
 {
+  command_str = strstrip(command_str);
   command_t simple_command = (command_t) checked_malloc(sizeof(struct command));
 
   simple_command->type = SIMPLE_COMMAND;
@@ -287,6 +294,11 @@ of length 0\n", command_str);
     }
     if (command_str[i] == '>' && input_start == 0)
     {
+      if (output_start != 0)
+	{
+	  fprintf(stderr, "Syntax error: Simple command (\"%s\") contains multiple of the same redirect\n", command_str);
+	  exit(1);
+	}
       output_start = i + 1;
     } 
     else if (command_str[i] == '>' && input_start != 0)
@@ -296,6 +308,12 @@ of length 0\n", command_str);
     }
     else if (command_str[i] == '<' && output_start == 0)
     {
+      if (input_start != 0)
+	{
+
+	  fprintf(stderr, "Syntax error: Simple command (\"%s\") contains multiple of the same redirect\n", command_str);
+	  exit(1);
+	}
       input_start = i + 1;
     } 
     else if (command_str[i] == '<' && output_start != 0)
@@ -303,6 +321,11 @@ of length 0\n", command_str);
       input_start = i + 1;
       output_end = i;
     }
+    if (command_str[i] == ')')
+      {
+	fprintf(stderr, "Syntax error: Command (\"%s\") contains unopened parenthesis\n", command_str);
+	exit(1);
+      }
   }
 
   if (word_end == 0)
@@ -397,6 +420,11 @@ get_first_operator(char* input_string)
           first_op.cmd_type = AND_COMMAND;
           return first_op;
         }
+	else
+	{
+	  fprintf(stderr, "Syntax error: Input (\"%s\") contains too many consecutive &s\n", input_string);
+	  exit(1);
+	}
         break;
       case '|':
         first_op.start_location = &input_string[i];
@@ -417,7 +445,6 @@ get_first_operator(char* input_string)
         return first_op;
         break;
       case '\0':
-      case ')':
         first_op.start_location = &input_string[i];
         first_op.cmd_type = SIMPLE_COMMAND;
         return first_op;
@@ -566,6 +593,7 @@ convert_string_to_command_tree(char* input_string)
         root_command = (command_t) checked_malloc(sizeof(struct command));
         root_command->u.command[0] = parse_simple_command(buffer);
         root_command->type = first_op.cmd_type;
+	root_command->u.command[1] = NULL;
         current_command = root_command;
         free(buffer);
         continue;
