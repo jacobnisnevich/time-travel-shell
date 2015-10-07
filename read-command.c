@@ -291,17 +291,18 @@ convert_string_to_command_tree(char* input_string)
   while (*first_char != '\0')
   {
     first_operator first_op = get_first_operator(first_char);
-    if (first_op.cmd_type == SUBSHELL_COMMAND)
-	  {
-      // TODO: subshell command case
-
-      // Allocate space for the simple command up to the '('
+    // Allocate space for the simple command up to the operator
       // and store in a new buffer
 
       char* buffer = (char*) checked_malloc((first_op.start_location - first_char + 1) * 
         sizeof(char));
       memcpy(buffer, first_char, first_op.start_location - first_char);
       buffer[first_op.start_location - first_char] = '\0';
+      first_char = first_op.start_location;
+
+    if (first_op.cmd_type == SUBSHELL_COMMAND)
+	  {
+      // TODO: subshell command case
 
       // Get the command string contained within the ()
       int length = 0;
@@ -314,13 +315,6 @@ convert_string_to_command_tree(char* input_string)
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
       // TODO: simple command case
-
-      // Allocate space for the simple command found and store
-      // the command in a new buffer
-      char* buffer = (char*) checked_malloc((first_op.start_location - first_char + 1) * 
-        sizeof(char));
-      memcpy(buffer, first_char, first_op.start_location - first_char);
-      buffer[first_op.start_location - first_char] = '\0';
 
       // Call parse simple command to generate the new node in the command tree
       if (root_command == NULL)
@@ -338,12 +332,6 @@ convert_string_to_command_tree(char* input_string)
     }
     else if (first_op.cmd_type == SEQUENCE_COMMAND)
     {
-      // Allocate space for the simple command up to the found semicolon
-      char* buffer = (char*) checked_malloc((first_op.start_location - first_char + 1) *
-        sizeof(char));
-      memcpy(buffer, first_char, first_op.start_location - first_char);
-      buffer[first_op.start_location - first_char] = '\0';
-      first_char = first_op.start_location;
       first_char++; // Advance past the semicolon
 
       // Allocate the new root of the tree and connect it with the
@@ -370,23 +358,54 @@ convert_string_to_command_tree(char* input_string)
       break;
 
     }
-    else
+    else if (first_op.cmd_type == PIPE_COMMAND)
     {
-      // TODO: OR_COMMAND, AND_COMMAND, PIPE_COMMAND
-
-      // Allocate space for the simple command up to the found operator and 
-      // copy into the new buffer
-      char* buffer = (char*) checked_malloc((first_op.start_location - 
-        first_char + 1) * sizeof(char));
-      memcpy(buffer, first_char, first_op.start_location - first_char);
-      buffer[first_op.start_location - first_char] = '\0';
-      first_char = first_op.start_location;
+      // TODO: PIPE_COMMAND
+      // TODO: OR_COMMAND, AND_COMMAND
       first_char++;
 
-      if (first_op.cmd_type == AND_COMMAND || first_op.cmd_type == OR_COMMAND)
+      // Allocate the current command to contain the simple command up 
+      // to the found operator. Use parse_simple_command to populate the
+      // new node appropriately
+      if (root_command == NULL)
       {
-	      first_char++; // Advance past the delimiter
+        root_command = (command_t) checked_malloc(sizeof(struct command));
+        current_command = root_command;
+        root_command->type = PIPE_COMMAND;
+        root_command->u.command[0] = parse_simple_command(buffer);
+        root_command->u.command[1] = NULL;
+        free(buffer);
+        break;
       }
+
+      // Check the root operator. If it is of lesser precedence (AND/OR)
+      // then create a new root. Otherwise, place the pipe command the same
+      // as AND/OR command
+      if (root_command->type == AND_COMMAND || root_command->type == OR_COMMAND)
+      {
+        current_command->u.command[1] = parse_simple_command(buffer);
+        command_t temp = checked_malloc(sizeof(struct command));
+        temp->u.command[0] = root_command;
+        root_command = temp;
+        current_command = root_command;
+        current_command->u.command[1] = NULL;
+      }
+      else
+      {
+        current_command->u.command[1] = (command_t) checked_malloc(sizeof(struct command));
+        current_command = current_command->u.command[1];
+        current_command->u.command[0] = parse_simple_command(buffer);
+        current_command->type = PIPE_COMMAND;
+        current_command->u.command[1] = NULL;
+      }
+      free(buffer);
+    }
+    else
+    {
+      // TODO: OR_COMMAND, AND_COMMAND
+      first_char++;
+	    first_char++; // Advance past the delimiter
+
 
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
@@ -402,9 +421,6 @@ convert_string_to_command_tree(char* input_string)
         current_command = current_command->u.command[1];
       }
 
-      // Create the new root of the command tree and assign the command
-      // type to be that of the found operator. Connect the new root with
-      // the old root
       current_command->type = first_op.cmd_type;
       current_command->u.command[0] = parse_simple_command(buffer);
       current_command->u.command[1] = NULL;
