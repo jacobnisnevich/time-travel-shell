@@ -80,7 +80,7 @@ strtok_str(char* input_string, char* delimiter, int* num_trees)
   buffer[&input_string[input_string_size] - start] = '\0';
 
   split_input[(*num_trees)++] = buffer;
-
+  split_input[*num_trees] = '\0';
   return split_input;
 }
 
