@@ -39,19 +39,45 @@ command_t create_new_command()
 }
 
 void
+free_array_strings(char** array, int count)
+{
+  int i;
+  for (i = 0; array[i]; i++)
+  {
+    free(array[i]);
+  }
+
+  free(array);
+}
+
+void
 free_command_tree (command_t cmd)
 {
   if (cmd->type == SIMPLE_COMMAND)
   {
-    free(cmd->u.word);
     free(cmd->input);
     free(cmd->output);
+    char** ptr = cmd->u.word;
+    while(*ptr)
+    {
+      char* temp = *ptr;
+      ptr++;
+      free(temp);
+    }
+    free(cmd->u.word);
     free(cmd);
   }
   else
   {
-    free_command_tree(cmd->u.command[0]);
-    free_command_tree(cmd->u.command[1]);
+    if (cmd->type == SUBSHELL_COMMAND)
+    {
+      free(cmd->u.subshell_command);
+    }
+    else //PIPE, OR, AND
+    {
+      free_command_tree(cmd->u.command[0]);
+      free_command_tree(cmd->u.command[1]);
+    }
     free(cmd);
   }
 }
@@ -633,7 +659,7 @@ convert_string_to_command_tree(char* input_string)
         root_command = create_new_command();
         root_command->u.command[0] = parse_simple_command(buffer);
         root_command->type = first_op.cmd_type;
-	root_command->u.command[1] = NULL;
+        root_command->u.command[1] = NULL;
         current_command = root_command;
         free(buffer);
         continue;
@@ -698,6 +724,9 @@ split_to_command_trees(char* input_string)
       cur->next = NULL;
     }
   }
+
+  free_array_strings(command_tree_strings, num_trees);
+
   return head;
 }
 
@@ -734,6 +763,8 @@ make_command_stream (int (*get_next_byte) (void *),
   input_string = preprocess_input(input_string);
 
   command_stream_t command_trees = split_to_command_trees(input_string);
+
+  free(input_string);
 
   return command_trees;
 }
