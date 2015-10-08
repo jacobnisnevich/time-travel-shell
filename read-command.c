@@ -37,6 +37,39 @@ command_t create_new_command()
   memset(temp, 0, sizeof(struct command));
   return temp;
 }
+
+void
+free_command_tree (command_t cmd)
+{
+  if (cmd->type == SIMPLE_COMMAND)
+  {
+    free(cmd->u.word);
+    free(cmd->input);
+    free(cmd->output);
+    free(cmd);
+  }
+  else
+  {
+    free_command_tree(cmd->u.command[0]);
+    free_command_tree(cmd->u.command[1]);
+    free(cmd);
+  }
+}
+
+void
+free_command_stream (command_stream_t cmd_stream)
+{
+  command_stream_t cur = cmd_stream;
+
+  while (cur)
+  {
+    free_command_tree(cur->command_tree);
+    command_stream_t temp = cur;
+    cur = cur->next;
+    free(temp);
+  }
+}
+
 // from Linux kernel string functions
 char*
 strstrip(char *s)

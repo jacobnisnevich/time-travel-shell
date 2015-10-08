@@ -4,6 +4,7 @@
 #include <error.h>
 #include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "command.h"
 
@@ -57,18 +58,20 @@ main (int argc, char **argv)
   command_t last_command = NULL;
   command_t command;
   while ((command = read_command_stream (command_stream_ptr)))
+  {
+    if (print_tree)
     {
-      if (print_tree)
-	{
-	  printf ("# %d\n", command_number++);
-	  print_command (command);
-	}
-      else
-	{
-	  last_command = command;
-	  execute_command (command, time_travel);
-	}
+      printf ("# %d\n", command_number++);
+      print_command (command);
     }
+    else
+    {
+      last_command = command;
+      execute_command (command, time_travel);
+    }
+  }
+
+  free_command_stream(command_stream);
 
   return print_tree || !last_command ? 0 : command_status (last_command);
 }
