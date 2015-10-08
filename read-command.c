@@ -39,7 +39,7 @@ command_t create_new_command()
 }
 
 void
-free_array_strings(char** array, int count)
+free_array_strings(char** array)
 {
   int i;
   for (i = 0; array[i]; i++)
@@ -57,14 +57,7 @@ free_command_tree (command_t cmd)
   {
     free(cmd->input);
     free(cmd->output);
-    char** ptr = cmd->u.word;
-    while(*ptr)
-    {
-      char* temp = *ptr;
-      ptr++;
-      free(temp);
-    }
-    free(cmd->u.word);
+    free_array_strings(cmd->u.word);
     free(cmd);
   }
   else
@@ -725,7 +718,7 @@ split_to_command_trees(char* input_string)
     }
   }
 
-  free_array_strings(command_tree_strings, num_trees);
+  free_array_strings(command_tree_strings);
 
   return head;
 }
