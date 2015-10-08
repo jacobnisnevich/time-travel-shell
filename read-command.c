@@ -129,10 +129,10 @@ get_outer_subshell_cmd_str(char* input_string,
   }
 
   if (end_char == 0)
-    {
-      fprintf(stderr, "Syntax error: Subshell command (\"%s\") has unclosed parenthesis\n", input_string);
-      exit(1);
-    }
+  {
+    fprintf(stderr, "Syntax error: Subshell command (\"%s\") has unclosed parenthesis\n", input_string);
+    exit(1);
+  }
   
   char* subshell_str = (char*) checked_malloc((*num_chars + 1) * sizeof(char));
   memcpy(subshell_str, input_string + start_char, *num_chars);
@@ -295,10 +295,11 @@ of length 0\n", command_str);
     if (command_str[i] == '>' && input_start == 0)
     {
       if (output_start != 0)
-	{
-	  fprintf(stderr, "Syntax error: Simple command (\"%s\") contains multiple of the same redirect\n", command_str);
-	  exit(1);
-	}
+      {
+        fprintf(stderr, "Syntax error: Simple command (\"%s\") contains \
+multiple of the same redirect\n", command_str);
+        exit(1);
+      }
       output_start = i + 1;
     } 
     else if (command_str[i] == '>' && input_start != 0)
@@ -309,11 +310,11 @@ of length 0\n", command_str);
     else if (command_str[i] == '<' && output_start == 0)
     {
       if (input_start != 0)
-	{
-
-	  fprintf(stderr, "Syntax error: Simple command (\"%s\") contains multiple of the same redirect\n", command_str);
-	  exit(1);
-	}
+      {
+        fprintf(stderr, "Syntax error: Simple command (\"%s\") contains \
+multiple of the same redirect\n", command_str);
+        exit(1);
+      }
       input_start = i + 1;
     } 
     else if (command_str[i] == '<' && output_start != 0)
@@ -322,10 +323,11 @@ of length 0\n", command_str);
       output_end = i;
     }
     if (command_str[i] == ')')
-      {
-	fprintf(stderr, "Syntax error: Command (\"%s\") contains unopened parenthesis\n", command_str);
-	exit(1);
-      }
+    {
+      fprintf(stderr, "Syntax error: Command (\"%s\") contains unopened \
+parenthesis\n", command_str);
+      exit(1);
+    }
   }
 
   if (word_end == 0)
@@ -422,7 +424,8 @@ get_first_operator(char* input_string)
         }
 	else
 	{
-	  fprintf(stderr, "Syntax error: Input (\"%s\") contains too many consecutive &s\n", input_string);
+	  fprintf(stderr, "Syntax error: Input (\"%s\") contains too many \
+consecutive &s\n", input_string);
 	  exit(1);
 	}
         break;
