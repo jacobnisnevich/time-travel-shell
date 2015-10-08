@@ -42,7 +42,6 @@ resulting array of command tree strings, allocate a command_stream_t and call
 the convert_string_to_command_tree function on each string. Once this completes,
 the head command_stream_t is returned.
 
-< ALEX WRITE A PARAGRAPH convert_string_to_command_tree HERE >
 In convert_string_to_command_tree, the command tree is created based on the
 precedence of the different operators. Using get_first_operator_ function, 
 the input string is scanned for the next available. After processing, the start
@@ -50,11 +49,12 @@ point is advanced past the found operator. Based on precedence, the new command
 is either allocated as a child of the last command created, allocated as the new
 root of the tree, or allocated as the replacement of the last command created.
 
-Sequence commands have the highest precedence, so when a sequence command is found,
-it always replaces the root of the tree. 
+Sequence commands have the highest precedence, so when a sequence command is 
+found, it always replaces the root of the tree. 
 
 Pipe commands have the next highest precedence. If the last processed command
 is AND or OR, then the PIPE command can be created as a child if the previous command.
+
 If the previous command was a PIPE, then the new pipe command must replace the
 previous pipe command. The previous pipe command will then become the left 
 child of the new pipe command. This is done to achieve the left to right
@@ -71,7 +71,7 @@ type found and the position of the first character in the operator in the input
 string. The first_op object is used by other functions to assign the type to 
 a new command and advance the parsing past the operator found.
 
-In the case of the first operator hit being a '(', the 
+In the case of the first operator hit being an open parenthesis, the 
 get_outer_subshell_cmd_str function is called with the pointer to the location
 of the '(' character. The get_outer_subshell_cmd_str function simply returns 
 the contents of the outermost parentheses. If the number of open parentheses is
