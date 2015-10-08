@@ -31,6 +31,12 @@ first_operator
   char* error;
 } first_operator;
 
+command_t create_new_command()
+{
+  command_t temp = (command_t) checked_malloc(sizeof(struct command));
+  memset(temp, 0, sizeof(struct command));
+  return temp;
+}
 // from Linux kernel string functions
 char*
 strstrip(char *s)
@@ -269,7 +275,7 @@ command_t
 parse_simple_command(char* command_str)
 {
   command_str = strstrip(command_str);
-  command_t simple_command = (command_t) checked_malloc(sizeof(struct command));
+  command_t simple_command = create_new_command();
 
   simple_command->type = SIMPLE_COMMAND;
   simple_command->input = 0;
@@ -518,13 +524,13 @@ convert_string_to_command_tree(char* input_string)
       // old root
       if (root_command == NULL)
       {
-        root_command = (command_t) checked_malloc(sizeof(struct command));
+        root_command = create_new_command();
         root_command->type = SEQUENCE_COMMAND;
         root_command->u.command[0] = parse_simple_command(buffer);
       }
       else
       {
-        command_t temp = (command_t) checked_malloc(sizeof(struct command));
+        command_t temp = create_new_command();
         temp->type = SEQUENCE_COMMAND;
         temp->u.command[0] = root_command;
         current_command->u.command[1] = parse_simple_command(buffer);
@@ -548,7 +554,7 @@ convert_string_to_command_tree(char* input_string)
       // new node appropriately
       if (root_command == NULL)
       {
-        root_command = (command_t) checked_malloc(sizeof(struct command));
+        root_command = create_new_command();
         current_command = root_command;
         root_command->type = PIPE_COMMAND;
         root_command->u.command[0] = parse_simple_command(buffer);
@@ -563,8 +569,7 @@ convert_string_to_command_tree(char* input_string)
       if (current_command->type == PIPE_COMMAND)
       {
         command_t temp = current_command->u.command[0];
-        current_command->u.command[0] = (command_t) checked_malloc(sizeof(struct 
-          command));
+        current_command->u.command[0] = create_new_command();
         current_command->u.command[0]->u.command[0] = temp;
         current_command->u.command[0]->u.command[1] = parse_simple_command(
           buffer);
@@ -573,8 +578,7 @@ convert_string_to_command_tree(char* input_string)
       }
       else
       {
-        current_command->u.command[1] = (command_t) checked_malloc(sizeof(struct 
-          command));
+        current_command->u.command[1] = create_new_command();
         current_command = current_command->u.command[1];
         current_command->u.command[0] = parse_simple_command(buffer);
         current_command->type = PIPE_COMMAND;
@@ -593,7 +597,7 @@ convert_string_to_command_tree(char* input_string)
       // new node appropriately
       if (root_command == NULL)
       {
-        root_command = (command_t) checked_malloc(sizeof(struct command));
+        root_command = create_new_command();
         root_command->u.command[0] = parse_simple_command(buffer);
         root_command->type = first_op.cmd_type;
 	root_command->u.command[1] = NULL;
@@ -607,8 +611,7 @@ convert_string_to_command_tree(char* input_string)
       {
         command_t temp = current_command->u.command[0];
         enum command_type temp_type = current_command->type;
-        current_command->u.command[0] = (command_t) checked_malloc(sizeof(struct 
-          command));
+        current_command->u.command[0] = create_new_command();
         current_command->type = first_op.cmd_type;
         current_command->u.command[0]->u.command[0] = temp;
         current_command->u.command[0]->u.command[1] = parse_simple_command(
@@ -619,7 +622,7 @@ convert_string_to_command_tree(char* input_string)
       else
       {
         command_t temp = root_command;
-        root_command = (command_t) checked_malloc(sizeof(struct command));
+        root_command = create_new_command();
         current_command->u.command[1] = parse_simple_command(buffer);
         root_command->u.command[0] = temp;
         root_command->type = first_op.cmd_type;
