@@ -1,1 +1,1 @@
-a b < c
+sort a.txt | cat -
