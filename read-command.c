@@ -548,8 +548,20 @@ convert_string_to_command_tree(char* input_string)
 
       // Create subhsell command here
       // command->u.subshell_command should be equal to the result of current_command below
-
-      current_command = convert_string_to_command_tree(sub_command);
+      if (root_command == NULL)
+      {
+      	root_command = create_new_command();
+	root_command->type = SUBSHELL_COMMAND;
+	root_command->u.subshell_command = convert_string_to_command_tree(sub_command);
+      }
+      else
+      {
+	command_t temp = create_new_command();
+      	temp->u.subshell_command = convert_string_to_command_tree(sub_command);
+      	temp->type = SUBSHELL_COMMAND;
+	current_command->u.command[1] = temp;
+	current_command = current_command->u.command[1];
+      }
     }
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
