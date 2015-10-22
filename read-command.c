@@ -625,7 +625,7 @@ convert_string_to_command_tree(char* input_string)
 {
   command_t root_command = NULL;
   command_t current_command = root_command;
-
+  int after_paren = 0;
   size_t input_length = strlen(input_string);
   char* first_char = input_string;
   while (*first_char != '\0')
@@ -699,6 +699,7 @@ convert_string_to_command_tree(char* input_string)
         current_command->u.command[1] = temp;
         current_command = current_command->u.command[1];
       }
+	after_paren = 1;
     }
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
@@ -823,8 +824,12 @@ convert_string_to_command_tree(char* input_string)
       {
         command_t temp = root_command;
         root_command = create_new_command();
-        current_command->u.command[1] = parse_simple_command(buffer);
-        root_command->u.command[0] = temp;
+	if (after_paren == 0)
+        {
+	  current_command->u.command[1] = parse_simple_command(buffer);
+        }
+	after_paren = 0;
+	root_command->u.command[0] = temp;
         root_command->type = first_op.cmd_type;
         current_command = root_command;
         current_command->u.command[1] = NULL;

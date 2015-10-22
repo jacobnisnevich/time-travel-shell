@@ -1,1 +1,1 @@
-echo hi && echo no (echo shit)
+(echo hello) hi && echo world
