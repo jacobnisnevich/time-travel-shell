@@ -480,12 +480,12 @@ get_first_operator(char* input_string)
           first_op.cmd_type = AND_COMMAND;
           return first_op;
         }
-	else
-	{
-	  fprintf(stderr, "Syntax error: Input (\"%s\") contains too many \
+  else
+  {
+    fprintf(stderr, "Syntax error: Input (\"%s\") contains too many \
 consecutive &s\n", input_string);
-	  exit(1);
-	}
+    exit(1);
+  }
         break;
       case '|':
         first_op.start_location = &input_string[i];
@@ -529,16 +529,16 @@ convert_string_to_command_tree(char* input_string)
   {
     first_operator first_op = get_first_operator(first_char);
     // Allocate space for the simple command up to the operator
-      // and store in a new buffer
+    // and store in a new buffer
 
-      char* buffer = (char*) checked_malloc((first_op.start_location - 
-        first_char + 1) * sizeof(char));
-      memcpy(buffer, first_char, first_op.start_location - first_char);
-      buffer[first_op.start_location - first_char] = '\0';
-      first_char = first_op.start_location;
+    char* buffer = (char*) checked_malloc((first_op.start_location - 
+      first_char + 1) * sizeof(char));
+    memcpy(buffer, first_char, first_op.start_location - first_char);
+    buffer[first_op.start_location - first_char] = '\0';
+    first_char = first_op.start_location;
 
     if (first_op.cmd_type == SUBSHELL_COMMAND)
-	  {
+    {
       // Get the command string contained within the ()
       int length = 0;
       char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, 
@@ -546,21 +546,19 @@ convert_string_to_command_tree(char* input_string)
       free(buffer);
       first_char += (length + 2); // Account for outer parentheses
 
-      // Create subhsell command here
-      // command->u.subshell_command should be equal to the result of current_command below
       if (root_command == NULL)
       {
-      	root_command = create_new_command();
-	root_command->type = SUBSHELL_COMMAND;
-	root_command->u.subshell_command = convert_string_to_command_tree(sub_command);
+        root_command = create_new_command();
+        root_command->type = SUBSHELL_COMMAND;
+        root_command->u.subshell_command = convert_string_to_command_tree(sub_command);
       }
       else
       {
-	command_t temp = create_new_command();
-      	temp->u.subshell_command = convert_string_to_command_tree(sub_command);
-      	temp->type = SUBSHELL_COMMAND;
-	current_command->u.command[1] = temp;
-	current_command = current_command->u.command[1];
+        command_t temp = create_new_command();
+        temp->u.subshell_command = convert_string_to_command_tree(sub_command);
+        temp->type = SUBSHELL_COMMAND;
+        current_command->u.command[1] = temp;
+        current_command = current_command->u.command[1];
       }
     }
     else if (first_op.cmd_type == SIMPLE_COMMAND)
@@ -653,7 +651,7 @@ convert_string_to_command_tree(char* input_string)
     {
       // TODO: OR_COMMAND, AND_COMMAND
       first_char++;
-	    first_char++; // Advance past the delimiter
+      first_char++; // Advance past the delimiter
 
       // Allocate the current command to contain the simple command up 
       // to the found operator. Use parse_simple_command to populate the
