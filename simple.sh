@@ -1,1 +1,1 @@
-(sort a.txt)
+(sort a.txt) < a.txt

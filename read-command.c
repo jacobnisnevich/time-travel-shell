@@ -31,6 +31,13 @@ first_operator
   char* error;
 } first_operator;
 
+typedef struct
+subshell_redirects
+{
+  char* input;
+  char* output;
+} subshell_redirects;
+
 command_t create_new_command()
 {
   command_t temp = (command_t) checked_malloc(sizeof(struct command));
@@ -323,6 +330,101 @@ preprocess_input(char* input_string)
   return input_string;
 }
 
+subshell_redirects
+get_subshell_redirects(char* command_str)
+{
+  command_str = strstrip(command_str);
+  subshell_redirects redirects;
+  redirects.input = "";
+  redirects.output = "";
+
+  int input_start = 0, input_end = 0, 
+      output_start = 0, output_end = 0;
+
+  size_t i;
+  for (i = 0; i < strlen(command_str); ++i)
+  {
+    if (command_str[i] == '>' && input_start == 0)
+    {
+      if (output_start != 0)
+      {
+        fprintf(stderr, "Syntax error: Subshell command (\"%s\") contains \
+multiple of the same redirect\n", command_str);
+        exit(1);
+      }
+      output_start = i + 1;
+    } 
+    else if (command_str[i] == '>' && input_start != 0)
+    {
+      output_start = i + 1;
+      input_end = i;
+    }
+    else if (command_str[i] == '<' && output_start == 0)
+    {
+      if (input_start != 0)
+      {
+        fprintf(stderr, "Syntax error: Subshell command (\"%s\") contains \
+multiple of the same redirect\n", command_str);
+        exit(1);
+      }
+      input_start = i + 1;
+    } 
+    else if (command_str[i] == '<' && output_start != 0)
+    {
+      input_start = i + 1;
+      output_end = i;
+    }
+    if (command_str[i] == ')')
+    {
+      fprintf(stderr, "Syntax error: Command (\"%s\") contains unopened \
+parenthesis\n", command_str);
+      exit(1);
+    }
+  }
+
+  if (output_end == 0 && output_start != 0)
+  {
+    output_end = strlen(command_str);
+    if (output_start == output_end)
+    {
+      fprintf(stderr, "Syntax error: Subshell command (\"%s\") contains empty \
+redirect\n", command_str);
+        exit(1);
+    }
+  }
+  if (input_end == 0 && input_start != 0)
+  {
+    input_end = strlen(command_str);
+    if (input_start == input_end)
+    {
+      fprintf(stderr, "Syntax error: Simple command (\"%s\") contains empty \
+redirect\n", command_str);
+        exit(1);
+    }
+  }
+
+  if (input_end != 0)
+  {
+    redirects.input = (char*) checked_malloc((input_end - input_start + 1) * 
+      sizeof(char));
+    memcpy(redirects.input, command_str + input_start, 
+      input_end - input_start);
+    redirects.input[input_end - input_start] = '\0';
+    redirects.input = strstrip(redirects.input);
+  }
+  if (output_end != 0)
+  {
+    redirects.output = (char*) checked_malloc((output_end - output_start +
+      1) * sizeof(char));
+    memcpy(redirects.output, command_str + output_start, 
+      output_end - output_start);
+    redirects.output[output_end - output_start] = '\0';
+    redirects.output = strstrip(redirects.output);
+  }
+
+  return redirects;
+}
+
 command_t
 parse_simple_command(char* command_str)
 {
@@ -546,17 +648,47 @@ convert_string_to_command_tree(char* input_string)
       free(buffer);
       first_char += (length + 2); // Account for outer parentheses
 
+      first_operator first_op_after_subshell = get_first_operator(first_char);
+      char* subshell_parse_buffer = (char*) checked_malloc((
+        first_op_after_subshell.start_location - first_char + 1) * 
+        sizeof(char));
+      memcpy(subshell_parse_buffer, first_char, 
+        first_op_after_subshell.start_location - first_char);
+      subshell_parse_buffer[first_op_after_subshell.start_location - 
+        first_char] = '\0';
+      first_char = first_op_after_subshell.start_location;
+
+      subshell_redirects redirects = get_subshell_redirects(
+        subshell_parse_buffer);
+
       if (root_command == NULL)
       {
         root_command = create_new_command();
         root_command->type = SUBSHELL_COMMAND;
-        root_command->u.subshell_command = convert_string_to_command_tree(sub_command);
+        root_command->u.subshell_command = convert_string_to_command_tree(
+          sub_command);
+        if (strcmp(redirects.input, "") != 0)
+        {
+          root_command->input = redirects.input;
+        }
+        if (strcmp(redirects.output, "") != 0)
+        {
+          root_command->output = redirects.output;
+        }
       }
       else
       {
         command_t temp = create_new_command();
-        temp->u.subshell_command = convert_string_to_command_tree(sub_command);
         temp->type = SUBSHELL_COMMAND;
+        temp->u.subshell_command = convert_string_to_command_tree(sub_command);
+        if (strcmp(redirects.input, "") != 0)
+        {
+          temp->input = redirects.input;
+        }
+        if (strcmp(redirects.output, "") != 0)
+        {
+          temp->output = redirects.output;
+        }
         current_command->u.command[1] = temp;
         current_command = current_command->u.command[1];
       }
