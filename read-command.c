@@ -539,21 +539,20 @@ convert_string_to_command_tree(char* input_string)
 
     if (first_op.cmd_type == SUBSHELL_COMMAND)
 	  {
-      // TODO: subshell command case
-
       // Get the command string contained within the ()
       int length = 0;
       char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, 
         &length);
       free(buffer);
-      first_char += length;
+      first_char += (length + 2); // Account for outer parentheses
+
+      // Create subhsell command here
+      // command->u.subshell_command should be equal to the result of current_command below
 
       current_command = convert_string_to_command_tree(sub_command);
     }
     else if (first_op.cmd_type == SIMPLE_COMMAND)
     {
-      // TODO: simple command case
-
       // Call parse simple command to generate the new node in the command tree
       if (root_command == NULL)
       {

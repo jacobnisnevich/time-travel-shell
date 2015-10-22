@@ -1,1 +1,1 @@
-sort a.txt | cat -
+(sort a.txt)
