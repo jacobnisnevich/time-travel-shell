@@ -72,6 +72,46 @@ execute_command (command_t c, int time_travel)
   pid_t pid;
   switch (c->type)
   {
+	case SUBSHELL_COMMAND:
+	{
+  int file_descriptor;
+
+  if (c->input)
+  {
+    file_descriptor = open(c->input, O_RDONLY);
+    if (file_descriptor < 0)
+    {
+      c->status = 1;
+      _exit(1);
+    }
+    if (dup2(file_descriptor, 0) == -1)
+    {
+      c->status = 1;
+      _exit(1);
+    }
+    close(file_descriptor);
+  }
+
+  if (c->output)
+  {
+    file_descriptor = open(c->output, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (file_descriptor < 0)
+    {
+      c->status = 1;
+      _exit(1);
+    }
+    if (dup2(file_descriptor, 1) == -1)
+    {
+      c->status = 1;
+      _exit(1);
+    }
+    close(file_descriptor);
+  }
+	
+	execute_command(c->u.subshell_command, time_travel);
+	c->status = c->u.subshell_command->status;
+	}
+	break;
     case PIPE_COMMAND:
     {
       int fds[2];
@@ -186,7 +226,6 @@ execute_command (command_t c, int time_travel)
         {
           c->status = WEXITSTATUS(status);
         }
-        _exit(0);
       }
       break;
     default:

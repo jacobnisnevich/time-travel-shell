@@ -1,1 +1,1 @@
-cat a.txt > b.txt
+echo hi && echo no (echo shit)

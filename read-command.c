@@ -646,9 +646,14 @@ convert_string_to_command_tree(char* input_string)
       int length = 0;
       char* sub_command = get_outer_subshell_cmd_str(first_op.start_location, 
         &length);
+      if (strcmp(strstrip(buffer), "") != 0)
+      {
+	      fprintf(stderr, "Syntax error: No operator before open paren");
+	      exit(1);	
+      }
       free(buffer);
       first_char += (length + 2); // Account for outer parentheses
-
+      
       first_operator first_op_after_subshell = get_first_operator(first_char);
       char* subshell_parse_buffer = (char*) checked_malloc((
         first_op_after_subshell.start_location - first_char + 1) * 
@@ -676,6 +681,7 @@ convert_string_to_command_tree(char* input_string)
         {
           root_command->output = redirects.output;
         }
+	current_command = root_command;
       }
       else
       {
