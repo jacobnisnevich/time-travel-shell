@@ -195,7 +195,8 @@ get_outer_subshell_cmd_str(char* input_string,
 
   if (end_char == 0)
   {
-    fprintf(stderr, "Syntax error: Subshell command (\"%s\") has unclosed parenthesis\n", input_string);
+    fprintf(stderr, "Syntax error: Subshell command (\"%s\") has unclosed \ 
+      parenthesis\n", input_string);
     exit(1);
   }
   

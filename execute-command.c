@@ -84,18 +84,21 @@ execute_command (command_t c, int time_travel)
       pid_t left = fork();
       if (left == -1)
       {
-        //error failed fork
+        fprintf(stderr, "Execute error: failed to fork");
+        _exit(1);
       }
       if (left == 0)
       {
         // child
         if (close(fds[0]) == -1) // close the read end
         {
-          // error couldnt close pipe
+          fprintf(stderr, "Execute error: failed to close pipe");
+          _exit(1);
         }
         if (dup2(fds[1], 1) == -1)
         {
-          // error failed to dup
+          fprintf(stderr, "Execute error: failed to dup");
+          _exit(1);
         }
         execute_command(c->u.command[0], time_travel);
         _exit(c->u.command[0]->status);
@@ -106,18 +109,21 @@ execute_command (command_t c, int time_travel)
         pid_t right = fork();
         if (right == -1)
         {
-          //error failed fork
+          fprintf(stderr, "Execute error: failed to fork");
+          _exit(1);
         }
         if (right == 0)
         {
           // child
           if (close(fds[1]) == -1) // close the read end
           {
-            // error couldnt close pipe
+            fprintf(stderr, "Execute error: failed to close pipe");
+          _exit(1);
           }
           if (dup2(fds[1], 0) == -1)
           {
-            // error failed to dup
+            fprintf(stderr, "Execute error: failed to dup");
+          _exit(1);
           }
           execute_command(c->u.command[1], time_travel);
           _exit(c->u.command[1]->status);
