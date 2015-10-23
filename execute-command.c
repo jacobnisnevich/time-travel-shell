@@ -16,17 +16,17 @@
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
-
+int childpid;
 int
 command_status (command_t c)
 {
   return c->status;
 }
 
-void handle_sigpipe(int sig, pid_t child)
+void handle_sigpipe(int sig)
 {
 	(void)sig;
-	kill(child, SIGPIPE);
+	kill(childpid, SIGPIPE);
 }
 void
 execute_simple_command(command_t c)
@@ -151,6 +151,7 @@ execute_command (command_t c, int time_travel)
       else
       {
         //parent
+        childpid = left;
      	signal(SIGPIPE, handle_sigpipe);
         pid_t right = fork();
         if (right == -1)
@@ -184,7 +185,7 @@ execute_command (command_t c, int time_travel)
 	{
 		//failed to close pipe
 	}
-	
+	childpid = right;	
 	if (waitpid(right, &status, 0) == -1)
 	{
 	}//failed to waitpid
@@ -194,8 +195,8 @@ execute_command (command_t c, int time_travel)
 	}
 	c->status = WEXITSTATUS(status);
 	signal(SIGPIPE, SIG_DFL);
-      }
-
+     }
+	break;
     }
     case AND_COMMAND:
       execute_command(c->u.command[0], time_travel);
@@ -248,6 +249,8 @@ execute_command (command_t c, int time_travel)
       else
       {
         // parent
+	childpid = pid;
+	signal(SIGPIPE, handle_sigpipe);
         waitpid(pid, &status, 0);
         if (WIFEXITED(status))
         {

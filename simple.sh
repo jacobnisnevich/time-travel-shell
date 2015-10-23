@@ -1,1 +1,1 @@
-(echo hello) | sort -
+echo hellow | cat - 
