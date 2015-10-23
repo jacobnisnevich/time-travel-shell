@@ -345,6 +345,13 @@ get_subshell_redirects(char* command_str)
   size_t i;
   for (i = 0; i < strlen(command_str); ++i)
   {
+    if (command_str[i] != '>' && command_str[i] != '>' && input_start == 0 &&
+      output_end == 0)
+    {
+      fprintf(stderr, "Syntax error: Subshell contains characters before \
+redirects\n");
+      exit(1);
+    }
     if (command_str[i] == '>' && input_start == 0)
     {
       if (output_start != 0)
