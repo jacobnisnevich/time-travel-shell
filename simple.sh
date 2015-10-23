@@ -1,1 +1,1 @@
-(echo hello) hi && echo world
+(echo hello) | sort -

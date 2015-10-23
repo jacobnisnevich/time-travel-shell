@@ -786,12 +786,29 @@ convert_string_to_command_tree(char* input_string)
       }
       else
       {
-        current_command->u.command[1] = create_new_command();
-        current_command = current_command->u.command[1];
-        current_command->u.command[0] = parse_simple_command(buffer);
-        current_command->type = PIPE_COMMAND;
-        current_command->u.command[1] = NULL;
-      }
+		
+        command_t temp  = create_new_command();
+       
+        temp->type = PIPE_COMMAND;
+        temp->u.command[1] = NULL;
+	if (after_paren == 0)
+	{ 
+		temp->u.command[0] = parse_simple_command(buffer);
+		current_command->u.command[1] = temp;
+		current_command = current_command->u.command[1];
+	 }
+	else
+	{
+		command_t temp2 = current_command->u.subshell_command;
+		current_command->type = PIPE_COMMAND;
+		current_command->u.command[0] = temp;
+		temp->type = SUBSHELL_COMMAND;
+		temp->u.subshell_command = temp2;
+		current_command->u.command[1] = NULL;
+		after_paren = 0;
+	}
+	  
+     }
       free(buffer);
     }
     else
