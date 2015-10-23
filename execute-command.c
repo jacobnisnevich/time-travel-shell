@@ -23,6 +23,11 @@ command_status (command_t c)
   return c->status;
 }
 
+void handle_sigpipe(int sig, pid_t child)
+{
+	(void)sig;
+	kill(child, SIGPIPE);
+}
 void
 execute_simple_command(command_t c)
 {
@@ -75,7 +80,6 @@ execute_command (command_t c, int time_travel)
 	case SUBSHELL_COMMAND:
 	{
   int file_descriptor;
-
   if (c->input)
   {
     file_descriptor = open(c->input, O_RDONLY);
@@ -114,7 +118,8 @@ execute_command (command_t c, int time_travel)
 	break;
     case PIPE_COMMAND:
     {
-      int fds[2];
+      int status;
+	int fds[2];
       if (pipe(fds) == -1)
       {
         error(1, errno, "Failed to pipe");
@@ -146,6 +151,7 @@ execute_command (command_t c, int time_travel)
       else
       {
         //parent
+     	signal(SIGPIPE, handle_sigpipe);
         pid_t right = fork();
         if (right == -1)
         {
@@ -154,20 +160,40 @@ execute_command (command_t c, int time_travel)
         }
         if (right == 0)
         {
-          // child
-          if (close(fds[1]) == -1) // close the read end
+          // child 2
+          if (close(fds[1]) == -1) // close the write end
           {
             fprintf(stderr, "Execute error: failed to close pipe");
           _exit(1);
           }
-          if (dup2(fds[1], 0) == -1)
+          if (dup2(fds[0], 0) == -1)
           {
             fprintf(stderr, "Execute error: failed to dup");
           _exit(1);
           }
           execute_command(c->u.command[1], time_travel);
-          _exit(c->u.command[1]->status);
+       	if(waitpid(left, NULL, WNOHANG))
+		kill(left, SIGPIPE);
+	  _exit(c->u.command[1]->status);
         }
+	else if (waitpid(left, &status, 0) == -1)
+	{//parent again
+		//failed to waitpid
+	}
+	if (close(fds[1]) == -1) //close write end after left command ends
+	{
+		//failed to close pipe
+	}
+	
+	if (waitpid(right, &status, 0) == -1)
+	{
+	}//failed to waitpid
+	if (close(fds[0]) == -1)
+	{
+		//failed to close pipe
+	}
+	c->status = WEXITSTATUS(status);
+	signal(SIGPIPE, SIG_DFL);
       }
 
     }
@@ -210,7 +236,9 @@ execute_command (command_t c, int time_travel)
         }
       }
     case SIMPLE_COMMAND:
-      pid = fork();
+      {
+	int status;
+	pid = fork();
       if (pid == 0)
       {
         // child
@@ -220,13 +248,13 @@ execute_command (command_t c, int time_travel)
       else
       {
         // parent
-        int status;
         waitpid(pid, &status, 0);
         if (WIFEXITED(status))
         {
           c->status = WEXITSTATUS(status);
         }
       }
+	}
       break;
     default:
       break;
