@@ -33,7 +33,8 @@ incomplete commands, to prevent the new lines from being read as sequences.
 The final function, remove_whitespace_from_end simply removes all spaces and
 new line characters from the end of the input string.
 
-After the preprocessing is completed, the next step in make_command_stream is to invoke the split_to_command_trees function on the input string. The 
+After the preprocessing is completed, the next step in make_command_stream is to
+invoke the split_to_command_trees function on the input string. The 
 split_to_command_trees function tokenizes the input string along all sets of two
 consecutive new line characters. It does this using strtok_str, a variation of 
 the strtok function that allows us to tokenize by strings rather than 
@@ -103,7 +104,24 @@ point to the next node. If it is null, the function returns null.
 Lab 1B
 ======
 
+For the second portion of the first lab, our goal was to make the timetrash
+program fully functional. This means, that when the timetrash program executes
+without any options, it should parse the shell script into individual command
+trees consisting of various command types and then execute them appropriately,
+in the correct order and with the currect output result.
 
+The core of Lab 1B is the execute_command function, which takes in a command
+tree and executes it appropriately. The function works with a switch statement
+that checks which type of command the current command is. If the command is a
+SUBSHELL, PIPE, AND, OR, or SEQUENCE command it will run either side of the tree
+recursively. The SIMPLE command case is essentially the base case for the 
+function. When the execution comes down to the SIMPLE command case, the
+execute_simple_command function is called, which executes a simple command.
+
+The execute_simple_command first checks if there is an input and/or an output.
+If one or both of these redirects exists, then the file being redirected is
+opened and duped to replace the STDIN or STDOUT file descriptor. The execvp
+function is then called on the u.word part of the command.
 
 Lab 1C
 ======
