@@ -41,7 +41,7 @@ execute_simple_command(command_t c)
       c->status = 1;
       _exit(1);
     }
-    if (dup2(file_descriptor, 0) == -1)
+    if (dup2(file_descriptor, STDIN_FILENO) == -1)
     {
       c->status = 1;
       _exit(1);
@@ -57,7 +57,7 @@ execute_simple_command(command_t c)
       c->status = 1;
       _exit(1);
     }
-    if (dup2(file_descriptor, 1) == -1)
+    if (dup2(file_descriptor, STDOUT_FILENO) == -1)
     {
       c->status = 1;
       _exit(1);
@@ -88,7 +88,7 @@ execute_command (command_t c, int time_travel)
       c->status = 1;
       _exit(1);
     }
-    if (dup2(file_descriptor, 0) == -1)
+    if (dup2(file_descriptor, STDIN_FILENO) == -1)
     {
       c->status = 1;
       _exit(1);
@@ -104,7 +104,7 @@ execute_command (command_t c, int time_travel)
       c->status = 1;
       _exit(1);
     }
-    if (dup2(file_descriptor, 1) == -1)
+    if (dup2(file_descriptor, STDOUT_FILENO) == -1)
     {
       c->status = 1;
       _exit(1);
@@ -140,7 +140,7 @@ execute_command (command_t c, int time_travel)
           fprintf(stderr, "Execute error: failed to close pipe");
           _exit(1);
         }
-        if (dup2(fds[1], 1) == -1)
+        if (dup2(fds[1], STDOUT_FILENO) == -1)
         {
           fprintf(stderr, "Execute error: failed to dup");
           _exit(1);
@@ -166,7 +166,7 @@ execute_command (command_t c, int time_travel)
             fprintf(stderr, "Execute error: failed to close pipe");
           _exit(1);
           }
-          if (dup2(fds[0], 0) == -1)
+          if (dup2(fds[0], STDIN_FILENO) == -1)
           {
             fprintf(stderr, "Execute error: failed to dup");
           _exit(1);
