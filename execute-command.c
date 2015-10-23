@@ -77,6 +77,11 @@ execute_command (command_t c, int time_travel)
   pid_t pid;
   switch (c->type)
   {
+	case SEQUENCE_COMMAND:
+		execute_command(c->u.command[0], time_travel);
+		execute_command(c->u.command[1], time_travel);
+		c->status = c->u.command[1]->status;
+		break;
 	case SUBSHELL_COMMAND:
 	{
   int file_descriptor;
