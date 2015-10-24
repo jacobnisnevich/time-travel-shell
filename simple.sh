@@ -1,1 +1,1 @@
-echo hellow | cat - 
+(cat && cat) < a.txt

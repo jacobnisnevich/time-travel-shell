@@ -117,8 +117,7 @@ execute_command (command_t c, int time_travel)
           _exit(1);
         }
         close(file_descriptor);
-      }
-      
+      } 
       execute_command(c->u.subshell_command, time_travel);
       c->status = c->u.subshell_command->status;
 

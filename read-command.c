@@ -345,7 +345,7 @@ get_subshell_redirects(char* command_str)
   size_t i;
   for (i = 0; i < strlen(command_str); ++i)
   {
-    if (command_str[i] != '>' && command_str[i] != '>' && input_start == 0 &&
+    if (command_str[i] != '<' && command_str[i] != '>' && input_start == 0 &&
       output_end == 0)
     {
       fprintf(stderr, "Syntax error: Subshell contains characters before \
@@ -738,11 +738,14 @@ convert_string_to_command_tree(char* input_string)
       }
       else
       {
+
         command_t temp = create_new_command();
         temp->type = SEQUENCE_COMMAND;
         temp->u.command[0] = root_command;
-        current_command->u.command[1] = parse_simple_command(buffer);
-        root_command = temp;
+	if (after_paren == 0)
+        	current_command->u.command[1] = parse_simple_command(buffer);
+        after_paren = 0;
+	root_command = temp;
       }
 
       // Create the rest of the command tree recursively
