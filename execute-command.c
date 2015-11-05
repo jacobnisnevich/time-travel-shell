@@ -2,6 +2,7 @@
 
 #include "command.h"
 #include "command-internals.h"
+#include "alloc.h"
 
 #include <error.h>
 #include <stdlib.h>
@@ -15,8 +16,8 @@
 #include <errno.h>
 
 typedef struct dependencies {
-	char** inputs;
-	char** outputs;
+  char** inputs;
+  char** outputs;
 } dependencies;
 
 /* FIXME: You may need to add #include directives, macro definitions,
@@ -76,35 +77,71 @@ execute_simple_command(command_t c)
 }
 
 dependencies
-merge_dependencies(dependencies_1, dependencies_2)
+merge_dependencies (dependencies dependencies_1, dependencies dependencies_2)
 {
-	dependencies new_dependencies;
-	new_dependencies.inputs = checked_malloc(256 * sizeof(char*));
-	new_dependencies.outputs = checked_malloc(256 * sizeof(char*));
+  dependencies new_dependencies;
+  new_dependencies.inputs = checked_malloc(256 * sizeof(char*));
+  new_dependencies.outputs = checked_malloc(256 * sizeof(char*));
+  int inputs_index = 0, outputs_index = 0;
 
-	
+  int i = 0;
+  while (dependencies_1.inputs[i] != NULL)
+  {
+    new_dependencies.inputs[inputs_index] = dependencies_1.inputs[i];
+    inputs_index++;
+    i++;
+  }
+
+  i = 0;
+  while (dependencies_1.outputs[i] != NULL)
+  {  
+    new_dependencies.outputs[outputs_index] = dependencies_1.outputs[i];
+    outputs_index++;
+    i++;
+  }
+
+  i = 0;
+  while (dependencies_2.inputs[i] != NULL)
+  {
+    new_dependencies.inputs[inputs_index] = dependencies_2.inputs[i];
+    inputs_index++;
+    i++;
+  }
+
+  i = 0;
+  while (dependencies_2.outputs[i] != NULL)
+  {  
+    new_dependencies.outputs[outputs_index] = dependencies_2.outputs[i];
+    outputs_index++;
+    i++;
+  }
+
+  return new_dependencies;
 }
 
 dependencies
 get_tree_dependencies (command_t c)
 {
-	dependencies tree_dependencies;
+  dependencies tree_dependencies;
 
-	if (c == NULL)
-	{
-		return NULL;
-	}
+  if (c == NULL)
+  {
+    dependencies empty_dependencies;
+    return empty_dependencies;
+  }
 
-	if (c->type == SUBSHELL_COMMAND)
-	{
-		tree_dependencies.inputs = checked_malloc(sizeof(char*));
-		tree_dependencies.inputs[0] = c->input;
-		tree_dependencies.outputs = checked_malloc(sizeof(char*));
-		tree_dependencies.outputs[0] = c->output;
+  if (c->type == SUBSHELL_COMMAND)
+  {
+    tree_dependencies.inputs = checked_malloc(sizeof(char*));
+    tree_dependencies.inputs[0] = c->input;
+    tree_dependencies.outputs = checked_malloc(sizeof(char*));
+    tree_dependencies.outputs[0] = c->output;
 
-		tree_dependencies = merge_dependencies(tree_dependencies, 
-			get_tree_dependencies(c->u.subshell_command));
-	}
+    tree_dependencies = merge_dependencies(tree_dependencies, 
+      get_tree_dependencies(c->u.subshell_command));
+  }
+
+  return tree_dependencies;
 };
 
 void
