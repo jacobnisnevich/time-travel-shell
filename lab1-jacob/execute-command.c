@@ -14,11 +14,6 @@
 #include <sys/types.h>
 #include <errno.h>
 
-typedef struct dependencies {
-	char** inputs;
-	char** outputs;
-} dependencies;
-
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 int childpid;
@@ -74,38 +69,6 @@ execute_simple_command(command_t c)
   c->status = 0;
   execvp(*(c->u.word), c->u.word);
 }
-
-dependencies
-merge_dependencies(dependencies_1, dependencies_2)
-{
-	dependencies new_dependencies;
-	new_dependencies.inputs = checked_malloc(256 * sizeof(char*));
-	new_dependencies.outputs = checked_malloc(256 * sizeof(char*));
-
-	
-}
-
-dependencies
-get_tree_dependencies (command_t c)
-{
-	dependencies tree_dependencies;
-
-	if (c == NULL)
-	{
-		return NULL;
-	}
-
-	if (c->type == SUBSHELL_COMMAND)
-	{
-		tree_dependencies.inputs = checked_malloc(sizeof(char*));
-		tree_dependencies.inputs[0] = c->input;
-		tree_dependencies.outputs = checked_malloc(sizeof(char*));
-		tree_dependencies.outputs[0] = c->output;
-
-		tree_dependencies = merge_dependencies(tree_dependencies, 
-			get_tree_dependencies(c->u.subshell_command));
-	}
-};
 
 void
 execute_command (command_t c, int time_travel)
