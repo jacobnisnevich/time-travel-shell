@@ -185,7 +185,7 @@ get_dependencies (command_t c, int* n_deps)
 
   int i = *n_deps;
   int j = 0;
-  while(i >= 0)
+  while (i >= 0)
   {
     res[j] = dep_arr[i];
     i--;
@@ -221,7 +221,7 @@ get_sequence_commands (command_t c, int* n_seqs)
 
   int i = *n_seqs;
   int j = 0;
-  while(i >= 0)
+  while (i >= 0)
   {
     res[j] = seq_arr[i];
     i--;
@@ -233,6 +233,13 @@ get_sequence_commands (command_t c, int* n_seqs)
   return seq_arr;
 }
 
+int check_dependencies (dependencies dep1, dependencies dep2)
+{
+  // return 1 if dep1 has outputs that dep2 has as inputs
+  // return 0 otherwise
+  return 0;
+}
+
 void 
 execute_parallel (command_t c)
 {
@@ -240,6 +247,88 @@ execute_parallel (command_t c)
   int n_seqs;
   dependencies* dep_arr = get_dependencies(c, &n_deps);
   command_t* seq_cmds = get_sequence_commands(c, &n_seqs);
+
+  int** adj_mat = checked_malloc((n_deps + 1) * sizeof(int*));
+  adj_mat[n_deps] = NULL;
+
+  int i = 0;
+  int j = 0;
+  for (; i < n_deps; i++)
+  {
+    adj_mat[i] = checked_malloc((n_deps + 1) * sizeof(int));
+    j = 0;
+    for (; j < n_deps; j++)
+    {
+      adj_mat[i][j] = 0;
+    }
+    adj_mat[i][n_deps] = -1;
+  }
+
+  i = 0;
+  j = 0;
+
+  for (; i < n_deps; i++)
+  {
+    for (; j < n_deps; j++)
+    {
+      if (i < j)
+      {
+        adj_mat[i][j] = check_dependencies(dep_arr[i], dep_arr[j]);
+      }
+    }
+  }
+
+  while (n_seqs != 0)
+  {
+    // scan to find column of all zeroes (guranteed to be at least one)
+    j = 0;
+    i = 0;
+    int n_parallel = 0;
+
+    int* parallels = checked_malloc(n_deps * sizeof(int));
+    pid_t* pids = checked_malloc(n_deps * sizeof(int));
+
+    for (;j < n_deps; j++)
+    {
+      int all_zeroes = 1;
+      for (; i < n_deps; i++)
+      {
+        if (adj_mat[i][j] == 1)
+        {
+          all_zeroes = 0;
+        }
+      }
+      if (all_zeroes == 1)
+      {
+        // we can execute this in parallel
+        // add command to buffer of parallel commands
+        n_parallel++;
+      }
+    }
+
+    // execute all the commands found to be parallel
+    // fork here
+
+    //if child
+    int z = 0;
+    for (; z < n_parallel; z++)
+    {
+      n_seqs--;
+      // fork and execute seq_commands[parallels[z]]
+      int k = 0;
+
+      // zero out the row to say that this commmand is done running
+      for (; k < n_seqs; k++)
+      {
+        adj_mat[parallels[z]][k] = 0;
+      }
+    }
+
+    // if parent
+    //  wait for child to exit, 
+
+  }
+
 
 
 }
