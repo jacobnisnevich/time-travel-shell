@@ -124,13 +124,14 @@ get_tree_dependencies (command_t c)
 {
   dependencies tree_dependencies;
 
-  if (c == NULL)
+  if (c->type == SIMPLE_COMMAND)
   {
-    dependencies empty_dependencies;
-    return empty_dependencies;
+    tree_dependencies.inputs = checked_malloc(sizeof(char*));
+    tree_dependencies.inputs[0] = c->input;
+    tree_dependencies.outputs = checked_malloc(sizeof(char*));
+    tree_dependencies.outputs[0] = c->output;
   }
-
-  if (c->type == SUBSHELL_COMMAND)
+  else if (c->type == SUBSHELL_COMMAND)
   {
     tree_dependencies.inputs = checked_malloc(sizeof(char*));
     tree_dependencies.inputs[0] = c->input;
@@ -140,7 +141,7 @@ get_tree_dependencies (command_t c)
     tree_dependencies = merge_dependencies(tree_dependencies, 
       get_tree_dependencies(c->u.subshell_command));
   }
-  else if (c->type == OR_COMMAND)
+  else
   {
     tree_dependencies = merge_dependencies(tree_dependencies, 
       get_tree_dependencies(c->u.command[0]));
