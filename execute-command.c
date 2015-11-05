@@ -20,8 +20,10 @@ typedef struct dependencies {
   char** outputs;
 } dependencies;
 
-/* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
+typedef struct node {
+  command_t after;
+} node;
+
 int childpid;
 
 int
@@ -116,6 +118,9 @@ merge_dependencies (dependencies dependencies_1, dependencies dependencies_2)
     i++;
   }
 
+  new_dependencies.inputs[inputs_index] = NULL;
+  new_dependencies.outputs[outputs_index] = NULL;
+
   return new_dependencies;
 }
 
@@ -126,10 +131,12 @@ get_tree_dependencies (command_t c)
 
   if (c->type == SIMPLE_COMMAND)
   {
-    tree_dependencies.inputs = checked_malloc(sizeof(char*));
+    tree_dependencies.inputs = checked_malloc(2 * sizeof(char*));
     tree_dependencies.inputs[0] = c->input;
-    tree_dependencies.outputs = checked_malloc(sizeof(char*));
+    tree_dependencies.inputs[1] = NULL;
+    tree_dependencies.outputs = checked_malloc(2 * sizeof(char*));
     tree_dependencies.outputs[0] = c->output;
+    tree_dependencies.outputs[1] = NULL;
   }
   else if (c->type == SUBSHELL_COMMAND)
   {
@@ -143,18 +150,113 @@ get_tree_dependencies (command_t c)
   }
   else
   {
-    tree_dependencies = merge_dependencies(tree_dependencies, 
-      get_tree_dependencies(c->u.command[0]));
-    tree_dependencies = merge_dependencies(tree_dependencies, 
-      get_tree_dependencies(c->u.command[1]));
+    dependencies left_dependencies = get_tree_dependencies(c->u.command[0]);
+    dependencies right_dependencies = get_tree_dependencies(c->u.command[1]);
+    tree_dependencies = merge_dependencies(left_dependencies, 
+      right_dependencies);
   }
 
   return tree_dependencies;
 };
 
+dependencies* 
+get_dependencies (command_t c, int* n_deps)
+{
+  dependencies* dep_arr = checked_malloc(256 * sizeof(dependencies));
+
+  command_t cur = c;
+  *n_deps = 0;
+  while (1)
+  {
+    if (c->type != SEQUENCE_COMMAND)
+    {
+      dep_arr[*n_deps] = get_tree_dependencies(c);
+      break;
+    }
+    else
+    {
+       dep_arr[*n_deps] = get_tree_dependencies(c->u.command[1]);
+       (*n_deps)++;
+       cur = c->u.command[0];
+    }
+  }
+
+  dependencies* res = checked_malloc((*n_deps + 1) * sizeof(dependencies));
+
+  int i = *n_deps;
+  int j = 0;
+  while(i >= 0)
+  {
+    res[j] = dep_arr[i];
+    i--;
+    j++;
+  }
+  free(dep_arr);
+  return res;
+}
+
+command_t* 
+get_sequence_commands (command_t c, int* n_seqs)
+{
+  command_t* seq_arr = checked_malloc(256 * sizeof(command_t));
+
+  command_t cur = c;
+  *n_seqs = 0;
+  while (1)
+  {
+    if (c->type != SEQUENCE_COMMAND)
+    {
+      seq_arr[*n_seqs] = cur;
+      break;
+    }
+    else
+    {
+      seq_arr[*n_seqs] = c->u.command[0];
+      (*n_seqs)++;
+      cur = c->u.command[1];
+    }
+  }
+
+  command_t* res = checked_malloc((*n_seqs + 1) * sizeof(command_t));
+
+  int i = *n_seqs;
+  int j = 0;
+  while(i >= 0)
+  {
+    res[j] = seq_arr[i];
+    i--;
+    j++;
+  }
+  free(seq_arr);
+  return res;
+
+  return seq_arr;
+}
+
+void 
+execute_parallel (command_t c)
+{
+  int n_deps;
+  int n_seqs;
+  dependencies* dep_arr = get_dependencies(c, &n_deps);
+  command_t* seq_cmds = get_sequence_commands(c, &n_seqs);
+
+
+}
+
 void
 execute_command (command_t c, int time_travel)
 {
+  dependencies tree_dep = get_tree_dependencies(c);
+
+  if (time_travel == 1)
+  {
+    execute_parallel(c);
+    return;    
+  }  
+
+  return;
+
   pid_t pid;
   switch (c->type)
   {
