@@ -140,6 +140,13 @@ get_tree_dependencies (command_t c)
     tree_dependencies = merge_dependencies(tree_dependencies, 
       get_tree_dependencies(c->u.subshell_command));
   }
+  else if (c->type == OR_COMMAND)
+  {
+    tree_dependencies = merge_dependencies(tree_dependencies, 
+      get_tree_dependencies(c->u.command[0]));
+    tree_dependencies = merge_dependencies(tree_dependencies, 
+      get_tree_dependencies(c->u.command[1]));
+  }
 
   return tree_dependencies;
 };
