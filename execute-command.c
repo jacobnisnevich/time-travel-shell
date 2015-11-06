@@ -20,10 +20,6 @@ typedef struct dependencies {
   char** outputs;
 } dependencies;
 
-typedef struct node {
-  command_t after;
-} node;
-
 int childpid;
 
 int
@@ -302,50 +298,50 @@ execute_parallel (command_t c)
       {
         // we can execute this in parallel
         // add command to buffer of parallel commands
-        n_parallel++;
+        parallels[n_parallel] = j;
+	n_parallel++;
       }
     }
 
     // execute all the commands found to be parallel
-    // fork here
 
-    //if child
     int z = 0;
     for (; z < n_parallel; z++)
     {
       n_seqs--;
       // fork and execute seq_commands[parallels[z]]
       int k = 0;
-
+	pids[z] = fork();
+	if (pids[z] == 0)
+	{
+		//child
+		execute_command(seq_cmds[parallels[z]]);
+		_exit(1);
+	}
       // zero out the row to say that this commmand is done running
-      for (; k < n_seqs; k++)
+      for (; k < n_deps; k++)
       {
         adj_mat[parallels[z]][k] = 0;
       }
+	adj_mat[parallels[z]][parallels[z]] = 1;
     }
-
-    // if parent
-    //  wait for child to exit, 
-
+	//parent, collect all the children
+	i = 0;
+	for (; i < n_parallel; i++)
+	{
+		int status;
+		waitpid(pids[i], &status, WNOHANG);
+		if (!WIFEXITED(status))
+		{
+			exit(1);
+		}
+	}	
   }
-
-
-
 }
 
 void
 execute_command (command_t c, int time_travel)
 {
-  dependencies tree_dep = get_tree_dependencies(c);
-
-  if (time_travel == 1)
-  {
-    execute_parallel(c);
-    return;    
-  }  
-
-  return;
-
   pid_t pid;
   switch (c->type)
   {
