@@ -231,8 +231,23 @@ get_sequence_commands (command_t c, int* n_seqs)
 
 int check_dependencies (dependencies dep1, dependencies dep2)
 {
-  // return 1 if dep1 has outputs that dep2 has as inputs
-  // return 0 otherwise
+  int i = 0;
+  int j = 0;
+
+  while (dep1.outputs[i] != NULL)
+  {
+    while (dep2.inputs[j] != NULL)
+    {
+      if (dep1.ouputs[i] == dep2.inputs[j])
+      {
+        return 1;
+      }
+
+      j++;
+    }
+    i++;
+  }
+
   return 0;
 }
 
