@@ -178,16 +178,16 @@ get_dependencies (command_t c, int* n_deps)
   *n_deps = 0;
   while (1)
   {
-    if (c->type != SEQUENCE_COMMAND)
+    if (cur->type != SEQUENCE_COMMAND)
     {
-      dep_arr[*n_deps] = get_tree_dependencies(c);
+      dep_arr[*n_deps] = get_tree_dependencies(cur);
       break;
     }
     else
     {
-       dep_arr[*n_deps] = get_tree_dependencies(c->u.command[1]);
+       dep_arr[*n_deps] = get_tree_dependencies(cur->u.command[1]);
        (*n_deps)++;
-       cur = c->u.command[0];
+       cur = cur->u.command[0];
     }
   }
 
@@ -214,16 +214,16 @@ get_sequence_commands (command_t c, int* n_seqs)
   *n_seqs = 0;
   while (1)
   {
-    if (c->type != SEQUENCE_COMMAND)
+    if (cur->type != SEQUENCE_COMMAND)
     {
       seq_arr[*n_seqs] = cur;
       break;
     }
     else
     {
-      seq_arr[*n_seqs] = c->u.command[0];
+      seq_arr[*n_seqs] = cur->u.command[0];
       (*n_seqs)++;
-      cur = c->u.command[1];
+      cur = cur->u.command[1];
     }
   }
 
