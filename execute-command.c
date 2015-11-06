@@ -284,7 +284,7 @@ execute_parallel (command_t c)
     int* parallels = checked_malloc(n_deps * sizeof(int));
     pid_t* pids = checked_malloc(n_deps * sizeof(int));
 
-    for (;j < n_deps; j++)
+    for (; j < n_deps; j++)
     {
       int all_zeroes = 1;
       for (; i < n_deps; i++)
@@ -299,7 +299,7 @@ execute_parallel (command_t c)
         // we can execute this in parallel
         // add command to buffer of parallel commands
         parallels[n_parallel] = j;
-	n_parallel++;
+        n_parallel++;
       }
     }
 
@@ -309,46 +309,50 @@ execute_parallel (command_t c)
     for (; z < n_parallel; z++)
     {
       n_seqs--;
+
       // fork and execute seq_commands[parallels[z]]
       int k = 0;
-	pids[z] = fork();
-	if (pids[z] == 0)
-	{
-		//child
-		execute_command(seq_cmds[parallels[z]]);
-		_exit(1);
-	}
+      pids[z] = fork();
+      if (pids[z] == 0)
+      {
+        // child
+        execute_command(seq_cmds[parallels[z]]);
+        _exit(1);
+      }
+
       // zero out the row to say that this commmand is done running
       for (; k < n_deps; k++)
       {
         adj_mat[parallels[z]][k] = 0;
       }
-	adj_mat[parallels[z]][parallels[z]] = 1;
+
+      adj_mat[parallels[z]][parallels[z]] = 1;
     }
-	//parent, collect all the children
-	i = 0;
-	for (; i < n_parallel; i++)
-	{
-		int status;
-		waitpid(pids[i], &status, WNOHANG);
-		if (!WIFEXITED(status))
-		{
-			exit(1);
-		}
-	}	
+
+    // parent, collect all the children
+    i = 0;
+    for (; i < n_parallel; i++)
+    {
+      int status;
+      waitpid(pids[i], &status, WNOHANG);
+      if (!WIFEXITED(status))
+      {
+        exit(1);
+      }
+    } 
   }
 }
 
 void
-execute_command (command_t c, int time_travel)
+execute_command (command_t c)
 {
   pid_t pid;
   switch (c->type)
   {
     case SEQUENCE_COMMAND:
     {
-      execute_command(c->u.command[0], time_travel);
-      execute_command(c->u.command[1], time_travel);
+      execute_command(c->u.command[0]);
+      execute_command(c->u.command[1]);
       c->status = c->u.command[1]->status;
 
       break;
@@ -387,7 +391,7 @@ execute_command (command_t c, int time_travel)
         }
         close(file_descriptor);
       } 
-      execute_command(c->u.subshell_command, time_travel);
+      execute_command(c->u.subshell_command);
       c->status = c->u.subshell_command->status;
 
       break;
@@ -422,7 +426,7 @@ execute_command (command_t c, int time_travel)
           fprintf(stderr, "Execute error: failed to dup");
           _exit(1);
         }
-        execute_command(c->u.command[0], time_travel);
+        execute_command(c->u.command[0]);
         _exit(c->u.command[0]->status);
       }
       else
@@ -450,7 +454,7 @@ execute_command (command_t c, int time_travel)
           _exit(1);
           }
 
-          execute_command(c->u.command[1], time_travel);
+          execute_command(c->u.command[1]);
 
           if (waitpid(left, NULL, WNOHANG))
           {
@@ -485,10 +489,10 @@ execute_command (command_t c, int time_travel)
     }
     case AND_COMMAND:
     {
-      execute_command(c->u.command[0], time_travel);
+      execute_command(c->u.command[0]);
       if (command_status(c->u.command[0]) == 0)
       {
-        execute_command(c->u.command[1], time_travel);
+        execute_command(c->u.command[1]);
 
         if (command_status(c->u.command[1]) == 0)
         {
@@ -507,7 +511,7 @@ execute_command (command_t c, int time_travel)
     }
     case OR_COMMAND:
     {
-      execute_command(c->u.command[0], time_travel);
+      execute_command(c->u.command[0]);
 
       if (command_status(c->u.command[0]) == 0)
       {
@@ -516,7 +520,7 @@ execute_command (command_t c, int time_travel)
       }
       else
       {
-        execute_command(c->u.command[1], time_travel);
+        execute_command(c->u.command[1]);
 
         if (command_status(c->u.command[1]) == 0)
         {
