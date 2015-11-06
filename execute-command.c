@@ -128,8 +128,22 @@ get_tree_dependencies (command_t c)
   if (c->type == SIMPLE_COMMAND)
   {
     tree_dependencies.inputs = checked_malloc(2 * sizeof(char*));
-    tree_dependencies.inputs[0] = c->input;
-    tree_dependencies.inputs[1] = NULL;
+
+    int n_words = 0;
+    while (c->u.word[n_words] != NULL) {
+      n_words++;
+    }
+
+    char** words_and_input = checked_malloc(n_words * sizeof(char*) + 1);
+    memcpy(words_and_input, c->u.word, n_words * sizeof(char*));
+    words_and_input[0] = c->input;
+    words_and_input[n_words] = NULL;
+
+    tree_dependencies.inputs = checked_malloc((n_words + 1) * 
+      sizeof(char*) + 1);
+    memcpy(tree_dependencies.inputs, words_and_input, n_words * 
+      sizeof(char*) + 1);
+
     tree_dependencies.outputs = checked_malloc(2 * sizeof(char*));
     tree_dependencies.outputs[0] = c->output;
     tree_dependencies.outputs[1] = NULL;
@@ -238,7 +252,7 @@ int check_dependencies (dependencies dep1, dependencies dep2)
   {
     while (dep2.inputs[j] != NULL)
     {
-      if (dep1.ouputs[i] == dep2.inputs[j])
+      if (dep1.outputs[i] == dep2.inputs[j])
       {
         return 1;
       }

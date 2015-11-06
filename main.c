@@ -67,7 +67,8 @@ main (int argc, char **argv)
     else
     {
       last_command = command;
-      execute_command (command, time_travel);
+      // execute_command (command);
+      execute_parallel (command);
     }
   }
 
