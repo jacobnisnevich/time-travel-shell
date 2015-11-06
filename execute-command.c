@@ -134,15 +134,32 @@ get_tree_dependencies (command_t c)
       n_words++;
     }
 
-    char** words_and_input = checked_malloc(n_words * sizeof(char*) + 1);
-    memcpy(words_and_input, c->u.word, n_words * sizeof(char*));
-    words_and_input[0] = c->input;
-    words_and_input[n_words] = NULL;
+    if (c->input != NULL) {
+      char** words_and_input = checked_malloc(n_words * sizeof(char*) + 1);
+      memcpy(words_and_input, c->u.word, n_words * sizeof(char*));
+      words_and_input[0] = c->input;
+      words_and_input[n_words] = NULL;
 
-    tree_dependencies.inputs = checked_malloc((n_words + 1) * 
-      sizeof(char*) + 1);
-    memcpy(tree_dependencies.inputs, words_and_input, n_words * 
-      sizeof(char*) + 1);
+      tree_dependencies.inputs = checked_malloc(n_words * 
+        sizeof(char*) + 1);
+      memcpy(tree_dependencies.inputs, words_and_input, n_words * 
+        sizeof(char*) + 1);
+    } else {
+      char** words_and_input = checked_malloc(n_words * sizeof(char*) + 1);
+
+      int i = 1;
+      for (; i < n_words; i++)
+      {
+        words_and_input[i - 1] = c->u.word[i];
+      }
+
+      words_and_input[n_words - 1] = NULL;
+
+      tree_dependencies.inputs = checked_malloc(n_words * 
+        sizeof(char*) + 1);
+      memcpy(tree_dependencies.inputs, words_and_input, n_words * 
+        sizeof(char*) + 1);
+    }
 
     tree_dependencies.outputs = checked_malloc(2 * sizeof(char*));
     tree_dependencies.outputs[0] = c->output;
