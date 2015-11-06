@@ -198,7 +198,8 @@ get_dependencies (command_t c, int* n_deps)
     if (cur->type != SEQUENCE_COMMAND)
     {
       dep_arr[*n_deps] = get_tree_dependencies(cur);
-      break;
+      (*n_deps)++;
+	break;
     }
     else
     {
@@ -210,7 +211,7 @@ get_dependencies (command_t c, int* n_deps)
 
   dependencies* res = checked_malloc((*n_deps + 1) * sizeof(dependencies));
 
-  int i = *n_deps;
+  int i = *n_deps - 1;
   int j = 0;
   while (i >= 0)
   {
@@ -234,19 +235,20 @@ get_sequence_commands (command_t c, int* n_seqs)
     if (cur->type != SEQUENCE_COMMAND)
     {
       seq_arr[*n_seqs] = cur;
-      break;
+	(*n_seqs)++; 
+     break;
     }
     else
     {
-      seq_arr[*n_seqs] = cur->u.command[0];
+      seq_arr[*n_seqs] = cur->u.command[1];
       (*n_seqs)++;
-      cur = cur->u.command[1];
+      cur = cur->u.command[0];
     }
   }
 
   command_t* res = checked_malloc((*n_seqs + 1) * sizeof(command_t));
 
-  int i = *n_seqs;
+  int i = *n_seqs - 1;
   int j = 0;
   while (i >= 0)
   {
@@ -380,7 +382,7 @@ execute_parallel (command_t c)
     for (; i < n_parallel; i++)
     {
       int status;
-      waitpid(pids[i], &status, WNOHANG);
+      waitpid(pids[i], &status, 0);
       if (!WIFEXITED(status))
       {
         exit(1);

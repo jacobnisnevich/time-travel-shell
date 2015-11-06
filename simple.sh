@@ -1,2 +1,2 @@
-echo hello
+echo hello | cat -
 echo world
