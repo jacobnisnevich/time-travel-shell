@@ -126,4 +126,43 @@ function is then called on the u.word part of the command.
 Lab 1C
 ======
 
+For the final part of the first lab, we created another method of execution
+called "time travel" mode, which speeds up shell script execution by taking
+advantage of the potential for parallelization of shell commands where 
+dependencies do not exist.
 
+At the heart of Lab 1C is the execute_parallel function, that takes a command
+tree and executes it in parallel. To do this it first calls get_dependencies and
+get_sequence_commands which return arrays of dependencies and sequence commands
+respectively. 
+
+The get_dependencies function creates an array of dependencies for each of the
+sequence commands at the top level of the command tree. It then calls the
+get_tree_dependencies function, which recursively gets dependencies for each
+command in the tree. A dependency is a struct that contains an array of inputs
+and an array of outputs. The get_tree_dependencies function also uses the
+merge_dependencies function which creates a new dependency struct from two
+seperate dependencies.
+
+The get_sequence_commands function simply returns an array of all top-level
+seqeuence commands in the command tree in order to execute them in parallel more
+effectively.
+
+Once the get_sequence_commands and get_dependencies functions return their 
+respective arrays, we use these arrays to build a adjacency matrix based on
+the dependencies between each of the sequence commands. We intialize an n by b
+matrix with all 0 values, where n is the number of top level sequence commands.
+We then place 1s where the check_dependencies function returns true.
+
+The check_dependencies function checks if some sequence is dependent on some 
+other sequence. This is done by comparing the outputs of the first sequence with
+the inputs of the second sequence.
+
+Using the matrix that we created by checking the dependencies of each top-level
+sequence command, we then check for sequences that are not dependent on any 
+other sequence command. These can be found in the adjacency matrix as sequences
+that that have all 0s in its column. After gathering a buffer of sequences that
+can be executed with no dependencies, we then execute each of these sequences in
+parallel and zero out the row corresponding to each of the sequences in the 
+buffer. We then continue execution until the dependency adjacency matrix 
+contains only 0s, at which point every command has been executed.
